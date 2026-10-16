@@ -1,3 +1,5 @@
+> **Native panel fork:** This branch adds a separately installable presentation plugin in [`packages/purge-panel`](packages/purge-panel). Upstream backend behavior is unchanged. See [maintenance and update instructions](NATIVE-PANEL.md).
+
 <p align="center">
   <img src="docs/banner.svg" alt="dsh-purge" width="720">
 </p>

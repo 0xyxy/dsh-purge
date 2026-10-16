@@ -34,8 +34,11 @@ export function PurgeIcon({ size = 20 } = {}) {
   );
 }
 
+// Suppress the legacy dock as well as its launchers. Upstream keeps the dock
+// mounted even when closed; without its positioning CSS it enters page flow.
+// Only exact upstream classes are targeted; our dshpp-* sidebar stays visible.
 export const ENTRY_CSS =
-  ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip{display:none!important}";
+  ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip,.dshp-dock{display:none!important}";
 
 export function PanelOverlays() {
   const st = useDock();

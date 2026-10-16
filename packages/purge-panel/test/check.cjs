@@ -186,7 +186,7 @@ const test = async () => {
           x.children
             .join("")
             .includes(
-              ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip{display:none!important}",
+              ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip,.dshp-dock{display:none!important}",
             ),
         ),
     );

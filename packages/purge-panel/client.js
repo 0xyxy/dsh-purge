@@ -12326,7 +12326,7 @@ function SettingsRoot(props = {}) {
       h(
         "span",
         { className: "dshpp-native-badge" },
-        "\u72EC\u7ACB\u754C\u9762 1.1.0"
+        "\u72EC\u7ACB\u754C\u9762 1.1.1"
       )
     ),
     h(CompatibilityNote, { status: backendStatus }),
@@ -12422,7 +12422,7 @@ function PurgeIcon({ size = 20 } = {}) {
     h("circle", { cx: 15, cy: 17, r: 3, fill: "none" })
   );
 }
-var ENTRY_CSS = ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip{display:none!important}";
+var ENTRY_CSS = ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip,.dshp-dock{display:none!important}";
 function PanelOverlays() {
   const st = useDock();
   return h(

@@ -1,6 +1,6 @@
 {
   "name": "dsh-purge-panel",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Purge 界面：独立右侧入口与原生风格设置页，官方 Purge 可单独更新。",
   "type": "module",
   "main": "index.js",

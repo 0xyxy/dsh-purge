@@ -9,10 +9,11 @@
 ```sh
 cd packages/purge-panel
 npm ci --ignore-scripts --legacy-peer-deps
+npm run build
 npm test
 npm pack --ignore-scripts
 # 使用当前 DSH 安装的 CLI：
-dsh plugin --profile desktop add ./dsh-purge-panel-1.0.1.tgz
+dsh plugin --profile desktop add ./dsh-purge-panel-1.1.0.tgz
 ```
 
 先安装并启用官方 Purge，再装界面包。打开右侧栏「＋ → Purge」。禁用界面包恢复官方入口，不删除原设置。
@@ -25,6 +26,7 @@ git switch native-panel
 git merge upstream/master
 cd packages/purge-panel
 npm ci --ignore-scripts --legacy-peer-deps
+npm run build
 npm test
 ```
 
@@ -37,3 +39,5 @@ npm test
 `npm test` 验证原生标签注册、分类切换时保留草稿、刷新不覆盖输入、查看页面不自动保存、旧入口隐藏规则、版本变化及服务异常提示。迁移在 DSH 桌面上验证：官方包恢复原版后，右侧独立界面仍加载，原提示词文件未变化。
 
 CI 只测试和打包，不发布 npm、GitHub Release 或插件市场。任何正式分发需单独决定。
+
+源码结构及本轮重构说明见 [界面包文档](packages/purge-panel/README.md#110-模块化)。`client.js` 由 `npm run build` 生成；修改源码后必须重建。

@@ -8,6 +8,26 @@ const calls = [],
   writes = [],
   seats = [],
   definitions = [];
+const headStyles = [],
+  lifecycle = [];
+const doc = {
+  head: {
+    append(node) {
+      headStyles.push(node);
+    },
+  },
+  createElement(tag) {
+    assert.equal(tag, "style");
+    return {
+      setAttribute() {},
+      textContent: "",
+      remove() {
+        const index = headStyles.indexOf(this);
+        if (index >= 0) headStyles.splice(index, 1);
+      },
+    };
+  },
+};
 let plugin,
   dict = {};
 const responses = {
@@ -55,6 +75,7 @@ const win = {
 };
 const sandbox = {
   window: win,
+  document: doc,
   localStorage: storage,
   console,
   AbortController,
@@ -90,7 +111,11 @@ const ctx = {
     },
     bind: () => (k) => dict[k] || k,
   },
-  effect: (fn) => fn(),
+  effect: (fn, name) => {
+    const dispose = fn();
+    lifecycle.push({ name, dispose });
+    return dispose;
+  },
   slots: {
     inject: (_, fn) => fn(),
     register: (spec, body) => {
@@ -110,6 +135,14 @@ const ctx = {
   },
 };
 plugin.apply(ctx);
+assert.equal(
+  headStyles.length,
+  1,
+  "Legacy visibility must install before any overlay is rendered",
+);
+assert(
+  headStyles[0].textContent.includes(".dshp-dock{display:none!important}"),
+);
 if (process.env.PANEL_CLIENT) {
   assert.equal(plugin.name, "dsh-purge-panel");
   assert(!seats.some((x) => /conversation\./.test(x.spec.name)));
@@ -179,19 +212,19 @@ const test = async () => {
     await act(async () => {
       o = create(React.createElement(overlay));
     });
-    assert(
-      o.root
-        .findAllByType("style")
-        .some((x) =>
-          x.children
-            .join("")
-            .includes(
-              ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip,.dshp-dock{display:none!important}",
-            ),
-        ),
-    );
     assert.equal(o.root.findAllByType("button").length, 0);
     await act(async () => o.unmount());
+    assert.equal(
+      headStyles.length,
+      1,
+      "Unmounting an overlay must not expose the legacy dock",
+    );
+    lifecycle.find((x) => x.name === "panel legacy visibility").dispose();
+    assert.equal(
+      headStyles.length,
+      0,
+      "Disabling the plugin must remove only its owned visibility style",
+    );
     responses["/dsh-purge/status"].plugin_version = "2.0.0";
     await act(async () => {
       tree = create(React.createElement(body, { t: ctx.locale.bind() }));

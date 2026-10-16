@@ -33,7 +33,6 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/entry.js
 var entry_exports = {};
 __export(entry_exports, {
-  ENTRY_CSS: () => ENTRY_CSS,
   PanelOverlays: () => PanelOverlays,
   PurgeIcon: () => PurgeIcon,
   apply: () => apply,
@@ -12326,7 +12325,7 @@ function SettingsRoot(props = {}) {
       h(
         "span",
         { className: "dshpp-native-badge" },
-        "\u72EC\u7ACB\u754C\u9762 1.1.1"
+        "\u72EC\u7ACB\u754C\u9762 1.1.2"
       )
     ),
     h(CompatibilityNote, { status: backendStatus }),
@@ -12402,6 +12401,18 @@ function SettingsRoot(props = {}) {
   );
 }
 
+// src/state/legacy-visibility.js
+var ENTRY_CSS = ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip,.dshp-dock{display:none!important}";
+function installLegacyVisibility(doc = globalThis.document) {
+  if (!doc?.head) return () => {
+  };
+  const style = doc.createElement("style");
+  style.setAttribute("data-dsh-purge-panel-visibility", "1");
+  style.textContent = ENTRY_CSS;
+  doc.head.append(style);
+  return () => style.remove();
+}
+
 // src/entry.js
 var name = "dsh-purge-panel";
 var inject = ["slots", "locale"];
@@ -12422,17 +12433,17 @@ function PurgeIcon({ size = 20 } = {}) {
     h("circle", { cx: 15, cy: 17, r: 3, fill: "none" })
   );
 }
-var ENTRY_CSS = ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip,.dshp-dock{display:none!important}";
 function PanelOverlays() {
   const st = useDock();
   return h(
     import_react.default.Fragment,
     null,
-    h("style", null, ENTRY_CSS + base_default),
+    h("style", null, base_default),
     st.authOpen ? h(AuthGate, { pending: st.pending }) : null
   );
 }
 function apply(ctx) {
+  ctx.effect(() => installLegacyVisibility(), "panel legacy visibility");
   ctx.inject(["sessions", "uiWorkspace"], (host2) => {
     host2.effect(() => bindSessionContext(host2), "panel session context");
   });

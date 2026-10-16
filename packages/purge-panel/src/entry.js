@@ -11,6 +11,7 @@ import { AuthGate } from "./components/auth.js";
 import { NS, setTranslate, zh, en } from "./shared/locale.js";
 import { SettingsRoot } from "./components/settings-shell.js";
 import { bindSessionContext } from "./state/session-context.js";
+import { installLegacyVisibility } from "./state/legacy-visibility.js";
 
 export const name = "dsh-purge-panel";
 
@@ -34,23 +35,18 @@ export function PurgeIcon({ size = 20 } = {}) {
   );
 }
 
-// Suppress the legacy dock as well as its launchers. Upstream keeps the dock
-// mounted even when closed; without its positioning CSS it enters page flow.
-// Only exact upstream classes are targeted; our dshpp-* sidebar stays visible.
-export const ENTRY_CSS =
-  ".dshp-launch,.dshp-hero-chip,.dshp-tab-chip,.dshp-dock{display:none!important}";
-
 export function PanelOverlays() {
   const st = useDock();
   return h(
     react.Fragment,
     null,
-    h("style", null, ENTRY_CSS + PURGE_CSS),
+    h("style", null, PURGE_CSS),
     st.authOpen ? h(AuthGate, { pending: st.pending }) : null,
   );
 }
 
 export function apply(ctx) {
+  ctx.effect(() => installLegacyVisibility(), "panel legacy visibility");
   ctx.inject(["sessions", "uiWorkspace"], (host) => {
     host.effect(() => bindSessionContext(host), "panel session context");
   });

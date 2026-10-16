@@ -12,7 +12,7 @@ npm ci --ignore-scripts --legacy-peer-deps
 npm test
 npm pack --ignore-scripts
 # 使用当前 DSH 安装的 CLI：
-dsh plugin --profile desktop add ./dsh-purge-panel-1.0.0.tgz
+dsh plugin --profile desktop add ./dsh-purge-panel-1.0.1.tgz
 ```
 
 先安装并启用官方 Purge，再装界面包。打开右侧栏「＋ → Purge」。禁用界面包恢复官方入口，不删除原设置。

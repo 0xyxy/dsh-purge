@@ -3,7 +3,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const React=require('react'),{create,act}=require('react-test-renderer');
 const calls=[],writes=[],seats=[],definitions=[];let plugin,dict={};
 const responses={
- '/dsh-purge/status':{ok:true,surface:'desktop',ai_base:'/fixture',patches_total:68,patches_applied:66,patches_skipped:2,patches_pending:0,patch_status:{},patches:[],plugin_version:'1.1.71-local.1',has_backup:true},
+ '/dsh-purge/status':{ok:true,surface:'desktop',ai_base:'/fixture',patches_total:68,patches_applied:66,patches_skipped:2,patches_pending:0,patch_status:{},patches:[],plugin_version:'1.1.71',has_backup:true},
  '/dsh-purge/update':{versions:[],channel:'stable'},
  '/dsh-purge/override':{ok:true,content:'Existing test prompt',defaultContent:'Default test prompt'},
  '/dsh-purge/own-servers':{ok:true,content:'example.test'},
@@ -36,6 +36,9 @@ const test=async()=>{
  await act(async()=>{btn('刷新状态').props.onClick();await new Promise(r=>setTimeout(r,10))});
  assert.equal(area('提示词内容').props.value,'UNSAVED prompt');
  assert.equal(area('服务器名单').props.value,'unsaved.example.test');
+ responses['/dsh-purge/status'].plugin_version='2.0.0';
+ await act(async()=>{btn('刷新状态').props.onClick();await new Promise(r=>setTimeout(r,10))});
+ assert(root.findAll(x=>x.props.role==='status').some(x=>x.children.join('').includes('官方版本 2.0.0')),'Compatibility banner must follow refreshed status');
  assert.equal(writes.length,0,'Opening, changing tabs and refreshing must not write configuration');
  assert(!root.findAllByType('button').some(x=>/dshp-launch|hero-chip|tab-btn/.test(x.props.className||'')));
  await act(async()=>tree.unmount());

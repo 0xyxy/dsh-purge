@@ -1,6 +1,6 @@
 {
   "name": "dsh-purge-panel",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Purge 界面：独立右侧入口与原生风格设置页，官方 Purge 可单独更新。",
   "type": "module",
   "main": "index.js",
@@ -37,7 +37,7 @@
     "@deepseek-ai/cordis": "^4.0.1"
   },
   "scripts": {
-    "test": "node --check client.js && node test/check.cjs"
+    "test": "node --check client.js && node test/check.cjs && node test/requests.cjs"
   },
   "devDependencies": {
     "react": "18.3.1",

@@ -1364,16 +1364,22 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
 			return node;
 		}
 
-		function PurgifySection({ page = "status" } = {}) {
+		function PurgifySection({ page = "status", onStatus } = {}) {
 			const t = useT();
 			const tRef = useRef(t);
 			tRef.current = t;
 			const [state, setState] = useState(null);
+            useEffect(() => { if(onStatus) onStatus(state); }, [state, onStatus]);
 			const [override, setOverride] = useState("");
 			const [defaultOverride, setDefaultOverride] = useState("");
 			const [overrideLoaded, setOverrideLoaded] = useState(false);
 			const [ownServers, setOwnServers] = useState("");
 			const [ownLoaded, setOwnLoaded] = useState(false);
+            const [ownBusy, setOwnBusy] = useState(false);
+            const ownPending = useRef(false);
+            const promptPending = useRef(false);
+            const ownRef = useRef("");
+            ownRef.current = ownServers;
 			const [patchBusy, setPatchBusy] = useState(false);
 			const [updateBusy, setUpdateBusy] = useState(false);
 			const [canApplyUpdate, setCanApplyUpdate] = useState(false);
@@ -1696,46 +1702,54 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
 				run();
 			}, [loadAll, rejectNeedPrompt, state]);
 
-			const saveOverride = useCallback(() => {
-				const tr = t;
-				const ticket = ++actionTicket.current;
-				const go = () => {
-					setPatchBusy(true);
-					setAskRestart(false);
-					setNotice({ kind: "idle", text: "" });
-					const content = readPromptBox();
-					fetch("/dsh-purge/override", {
-						method: "POST",
-						headers: { "content-type": "application/json" },
-						body: JSON.stringify({ content: content }),
-					})
-						.then((r) => r.json())
-						.then((d) => {
-							if (ticket !== actionTicket.current) return;
-							if (!d.ok || responseNeedsPrompt(d)) {
-								rejectNeedPrompt(tr);
-								return;
-							}
-							if (typeof d.content === "string") setOverride(d.content);
-							setNotice({ kind: "ok", text: t("saved.override") });
-						})
-						.catch((e) => {
-							if (ticket !== actionTicket.current) return;
-							setNotice({ kind: "error", text: t("err.save", { error: e.message }) });
-						})
-						.finally(() => {
-							if (ticket === actionTicket.current) setPatchBusy(false);
-						});
-				};
-				bothInjectEmpty(readPromptBox(), defaultOverrideRef.current).then((empty) => {
-					if (ticket !== actionTicket.current) return;
-					if (empty) {
-						rejectNeedPrompt(tr);
-						return;
-					}
-					go();
-				});
-			}, [t, rejectNeedPrompt]);
+            const saveOverride = useCallback(async () => {
+                if(promptPending.current) return;
+                promptPending.current=true;
+                const ticket=++actionTicket.current;
+                const content=readPromptBox();
+                setPatchBusy(true);
+                setNotice({kind:"idle",text:""});
+                try {
+                    if(await bothInjectEmpty(content,defaultOverrideRef.current)) {
+                        rejectNeedPrompt(t); return;
+                    }
+                    const d=await apiJson("/dsh-purge/override",{
+                        method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({content})
+                    });
+                    if(ticket!==actionTicket.current)return;
+                    if(responseNeedsPrompt(d)){rejectNeedPrompt(t);return;}
+                    if(!d || !d.ok)throw new Error((d&&d.error)||"保存失败");
+                    const unchanged=readPromptBox()===content;
+                    if(unchanged && typeof d.content==="string"){
+                        overrideRef.current=d.content; setOverride(d.content);
+                    }
+                    setNotice({kind:"ok",text:unchanged?t("saved.override"):"已保存提交的版本；当前修改尚未保存。"});
+                } catch(e) {
+                    if(ticket===actionTicket.current)setNotice({kind:"error",text:t("err.save",{error:e.message})});
+                } finally {
+                    promptPending.current=false;
+                    if(ticket===actionTicket.current)setPatchBusy(false);
+                }
+            },[t,rejectNeedPrompt]);
+
+            const saveOwnServers = async () => {
+                if(ownPending.current || !ownLoaded)return;
+                ownPending.current=true; setOwnBusy(true);
+                const content=ownRef.current;
+                try {
+                    const d=await apiJson("/dsh-purge/own-servers",{
+                        method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({content})
+                    });
+                    if(!d || !d.ok)throw new Error((d&&d.error)||"保存失败");
+                    const unchanged=ownRef.current===content;
+                    if(unchanged && typeof d.content==="string"){
+                        ownRef.current=d.content; setOwnServers(d.content);
+                    }
+                    setNotice({kind:"ok",text:!unchanged?"已保存提交的版本；当前修改尚未保存。":
+                        d.dropped>0?t("saved.own.dropped",{n:d.dropped}):t("saved.own")});
+                } catch(e){setNotice({kind:"error",text:t("err.save",{error:e.message})});}
+                finally{ownPending.current=false;setOwnBusy(false);}
+            };
 
 			const restoreOverride = useCallback(() => {
 				if (!defaultOverride) return;
@@ -1756,11 +1770,12 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
 							setNotice({ kind: "error", text: tr("err.save", { error: (d && d.error) || "" }) });
 							return;
 						}
-						if (typeof d.content === "string") {
+						const unchanged = readPromptBox() === defaultOverride;
+						if (typeof d.content === "string" && unchanged) {
 							overrideRef.current = d.content;
 							setOverride(d.content);
 						}
-						setNotice({ kind: "ok", text: tr("saved.restoreInject") });
+						setNotice({ kind: "ok", text: unchanged ? tr("saved.restoreInject") : "已恢复默认值；当前修改尚未保存。" });
 					})
 					.catch((e) => {
 						if (ticket !== actionTicket.current) return;
@@ -2001,6 +2016,7 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
 					className: "dshpp-area",
 					ref: promptAreaRef,
                     "aria-label": "提示词内容",
+                    disabled: !overrideLoaded,
 					value: override,
 					onChange: (e) => {
 						overrideRef.current = e.target.value;
@@ -2022,32 +2038,17 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
 						h(Btn, {
 							kind: "primary",
 							tiny: true,
-							disabled: !ownLoaded,
-							onClick: () => {
-								fetch("/dsh-purge/own-servers", {
-									method: "POST",
-									headers: { "content-type": "application/json" },
-									body: JSON.stringify({ content: ownServers }),
-								}).then((r) => r.json()).then((d) => {
-									if (!d || !d.ok) {
-										setNotice({ kind: "error", text: (d && d.error) || t("err.override", { error: "" }) });
-										return;
-									}
-									if (typeof d.content === "string") setOwnServers(d.content);
-									setNotice({
-										kind: "ok",
-										text: d.dropped > 0 ? t("saved.own.dropped", { n: d.dropped }) : t("saved.own"),
-									});
-								}).catch((e) => setNotice({ kind: "error", text: e.message }));
-							},
+                            disabled: !ownLoaded || ownBusy,
+                            onClick: saveOwnServers,
 						}, t("own.save")),
 					),
 				),
 				h("textarea", {
 					className: "dshpp-area",
 					"aria-label": "服务器名单",
+                    disabled: !ownLoaded,
                     value: ownServers,
-					onChange: (e) => setOwnServers(e.target.value),
+					onChange: (e) => { ownRef.current=e.target.value; setOwnServers(e.target.value); },
 					spellCheck: false,
 					rows: 4,
 					style: { minHeight: 96 },
@@ -2805,13 +2806,7 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
 			return detectHostTheme();
 		}
 
-        function CompatibilityNote() {
-            const [status,setStatus]=useState(null);
-            useEffect(()=>{let active=true;
-                apiJson("/dsh-purge/status").then(s=>{if(active)setStatus(s);})
-                    .catch(()=>{if(active)setStatus({unavailable:true});});
-                return()=>{active=false;};
-            },[]);
+        function CompatibilityNote({status}) {
             if(!status)return null;
             const v=String(status.plugin_version||"");
             const valid=typeof status.patches_total==="number" && !!v;
@@ -2824,6 +2819,7 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
         function SettingsRoot(props = {}) {
             const t = typeof props.t === "function" ? props.t : useT();
             const [page, setPage] = useState("status");
+            const [backendStatus,setBackendStatus]=useState(null);
             const st = useDock();
             const [visited, setVisited] = useState({status:true});
             const select = (id) => { setPage(id); setVisited(v => ({...v,[id]:true})); };
@@ -2833,15 +2829,15 @@ body:not([data-ds-dark-theme]) .dshpp-auth-ops button.primary{background:var(--d
                 h("style", null, PURGE_CSS + NATIVE_CSS),
                 h("header", {className:"dshpp-native-head"},
                     h("div", null, h("h2", null, "Purge"), h("p", null, "插件设置")),
-                    h("span", {className:"dshpp-native-badge"}, "独立界面 1.0.0")
+                    h("span", {className:"dshpp-native-badge"}, "独立界面 1.0.1")
                 ),
-                h(CompatibilityNote),
+                h(CompatibilityNote,{status:backendStatus}),
                 h("nav", {className:"dshpp-native-nav", "aria-label":"Purge 设置分类"},
                     [["status","状态"],["prompt","提示词"],["rules","规则"],["skills","技能"],["more","更多"]].map(([id,label]) =>
                         h("button", {key:id,type:"button","aria-pressed":page===id,onClick:()=>select(id)},label))
                 ),
                 h("div", {className:"dshpp-native-content"},
-                    h("div", {hidden: !["status","prompt","more"].includes(page)}, h(PurgifySection,{page})),
+                    h("div", {hidden: !["status","prompt","more"].includes(page)}, h(PurgifySection,{page,onStatus:setBackendStatus})),
                     visited.rules ? h("div", {hidden:page!=="rules"}, h(RulesSection)) : null,
                     visited.skills ? h("div", {hidden:page!=="skills"}, h(SkillsSection)) : null,
                     h("div", {hidden:page!=="more",className:"dshpp-more"},
@@ -7836,7 +7832,7 @@ body[data-ds-dark-theme] .dshpp-rewind-item span{color:var(--dsw-alias-label-ter
 			if (dockBus.open) setDock({ open: false, authOpen: false, pending: "tab" });
 			else openDockClean();
 		}
-		syncDrillGrant();
+
 
 		const DOCK_GEOM_KEY = "dsh-purge-dock-geom-v4";
 		/* 默认停在右上，底边留在输入框上面。拖动之后停在用户松开的位置，只保证不拖出窗口。 */
@@ -8419,6 +8415,14 @@ body[data-ds-dark-theme] .dshpp-rewind-item span{color:var(--dsw-alias-label-ter
                 st.authOpen ? h(AuthGate,{pending:st.pending}) : null);
         }
         function apply(ctx) {
+            ctx.effect(() => {
+                syncDrillGrant();
+                return () => {
+                    drillGrantGen += 1;
+                    if(drillSyncRetryTimer)clearTimeout(drillSyncRetryTimer);
+                    drillSyncRetryTimer=null;
+                };
+            },"panel grant sync");
             ctx.effect(() => ctx.locale.register(NS,{zh,en}), "panel locale");
             const t=ctx.locale.bind(NS); translate=t;
             ctx.slots.inject("shell.overlay", () => ctx.slots.register({

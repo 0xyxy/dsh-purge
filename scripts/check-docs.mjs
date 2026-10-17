@@ -8,6 +8,7 @@ const version = pkg.version;
 const notesFirst = read("release-notes.md").split("\n")[0].trim();
 const readme = read("README.md");
 const readmeEn = read("docs/README.en.md");
+const agents = read("AGENTS.md");
 
 const problems = [];
 if (notesFirst !== `# ${version}`) {
@@ -21,6 +22,12 @@ if (!readme.includes("raw.githubusercontent.com/kingcharleslzy-ai/dsh-purge/mast
 }
 if (!readmeEn.includes(`Current version ${version}`)) {
   problems.push(`docs/README.en.md 缺少 "Current version ${version}"`);
+}
+if (!agents.includes(`当前版本：**${version}**`)) {
+  problems.push(`AGENTS.md 缺少 "当前版本：**${version}**"`);
+}
+if (!agents.includes(`\`dsh-purge-community\` ${version}`)) {
+  problems.push(`AGENTS.md §9 版本表未同步到 ${version}`);
 }
 const hostLine = readme.match(/适配 \*\*DSH Desktop ([0-9a-z.\-]+)\*\*/i);
 if (!hostLine) problems.push("README.md 缺少「适配 DSH Desktop …」的版本行");

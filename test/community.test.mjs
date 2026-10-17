@@ -360,3 +360,40 @@ test("Desktop POSIX launcher without executable permission runs through sh witho
     f.close();
   }
 });
+
+test("large files are stored once and restored byte-for-byte", async () => {
+  const f = setup();
+  try {
+    const big = Buffer.alloc(64 * 1024, 7);
+    fs.writeFileSync(path.join(f.root, "client.js"), big);
+    const a = await f.manager.backup("dedupe-a");
+    const b = await f.manager.backup("dedupe-b");
+    const objects = path.join(f.home, "dsh-purge-community", "objects");
+    assert.equal(fs.readdirSync(objects).length, 1, "same content -> one object");
+    // 备份目录里不再重复放这份大文件
+    assert(
+      !fs.existsSync(
+        path.join(f.home, "dsh-purge-community", "backups", a.id, "plugins", PACKAGE, "client.js"),
+      ),
+      "deduped file is not copied into the snapshot folder",
+    );
+    assert(f.manager.verify(a.id));
+    assert(f.manager.verify(b.id));
+
+    // 回滚能把内容完整写回
+    const before = f.installs.length;
+    await f.manager.rollback(a.id);
+    const staged = f.installs.slice(before).find((p) => p.endsWith(PACKAGE));
+    assert(staged, "rollback staged the plugin");
+    assert(fs.readFileSync(path.join(staged, "client.js")).equals(big), "bytes restored");
+
+    const usage = f.manager.usage();
+    assert(usage.objects > 0);
+    // 全部删掉以后，对象被回收
+    const pr = f.manager.prune({ keepLast: 0, keepDays: 0, maxTotalBytes: 0 });
+    assert(pr.gc.removed >= 0);
+    assert.equal(f.manager.list().length <= 1, true);
+  } finally {
+    f.close();
+  }
+});

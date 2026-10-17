@@ -16,6 +16,7 @@ function setup() {
     profile = path.join(home, "profiles/desktop"),
     aiBase = path.join(home, "host");
   fs.mkdirSync(profile, { recursive: true });
+  fs.mkdirSync(path.join(aiBase, "dsh-agent-instructions", "lib"), { recursive: true });
   for (const pkg of ["dsh-agent-loop", "dsh-system-prompt"]) {
     fs.mkdirSync(path.join(aiBase, pkg), { recursive: true });
     fs.writeFileSync(
@@ -82,26 +83,71 @@ function setup() {
     close: () => fs.rmSync(home, { recursive: true, force: true }),
   };
 }
-test("exact host runtime version and matching components required, binary writes never guessed", () => {
+test("compatibility reports instead of disabling: 0.2.1 qualified, unknown version unverified but writable", () => {
   const f = setup();
   try {
-    assert.equal(compatibility(f.aiBase).runtime_supported, true);
-    assert.throws(() => requirePatchCompatibility(f.aiBase), /不允许/);
+    const base = compatibility(f.aiBase);
+    assert.equal(base.runtime_supported, true);
+    assert.equal(base.patch_writes_allowed, true);
+    assert.equal(base.qualified, true);
+    assert.equal(base.level, "qualified");
+    // 有宿主就允许写：门禁只挡"完全找不到宿主"，不按版本一刀切。
+    assert.doesNotThrow(() => requirePatchCompatibility(f.aiBase));
     fs.writeFileSync(
       path.join(f.aiBase, "dsh-system-prompt/package.json"),
       JSON.stringify({ version: "0.2.2" }),
     );
-    assert.equal(compatibility(f.aiBase).level, "mixed");
+    const mixed = compatibility(f.aiBase);
+    assert.equal(mixed.level, "mixed");
+    // 版本不一致只报告，不再挡写入：补丁照打，状态与备份兜底。
+    assert.equal(mixed.patch_writes_allowed, true);
+    assert.doesNotThrow(() => requirePatchCompatibility(f.aiBase));
     for (const pkg of ["dsh-agent-loop", "dsh-system-prompt"])
       fs.writeFileSync(
         path.join(f.aiBase, pkg, "package.json"),
         JSON.stringify({ version: "99.0.0" }),
       );
-    assert.equal(compatibility(f.aiBase).runtime_supported, false);
+    const unknown = compatibility(f.aiBase);
+    assert.equal(unknown.runtime_supported, true);
+    assert.equal(unknown.qualified, false);
+    assert.equal(unknown.level, "unverified");
+    assert.equal(unknown.patch_writes_allowed, true);
+    assert.doesNotThrow(() => requirePatchCompatibility(f.aiBase));
   } finally {
     f.close();
   }
 });
+
+test("no host layout still blocks writes with a clear message", () => {
+  const empty = fs.mkdtempSync(path.join(os.tmpdir(), "purge-nohost-"));
+  try {
+    const none = compatibility(empty);
+    assert.equal(none.level, "no-host");
+    assert.equal(none.patch_writes_allowed, false);
+    assert.throws(() => requirePatchCompatibility(empty), /未定位到宿主/);
+  } finally {
+    fs.rmSync(empty, { recursive: true, force: true });
+  }
+});
+test("backup retention keeps the newest snapshots and reports disk usage", async () => {
+  const f = setup();
+  try {
+    const made = [];
+    for (let i = 0; i < 4; i += 1) made.push(await f.manager.backup("retention-test"));
+    const usage = f.manager.usage();
+    assert(usage.count >= 4);
+    assert(usage.bytes > 0);
+    const pruned = f.manager.prune({ keepLast: 2, keepDays: 1, maxTotalBytes: 512 * 1024 * 1024 });
+    assert(pruned.kept <= 3, `kept ${pruned.kept}`);
+    const left = f.manager.list().map((b) => b.id);
+    assert(left.includes(made[made.length - 1].id), "newest snapshot must survive");
+    assert(f.manager.verify(made[made.length - 1].id));
+    assert(pruned.freed >= 0);
+  } finally {
+    f.close();
+  }
+});
+
 test("backup is complete, private, verifiable and does not include credentials or images", async () => {
   const f = setup();
   try {

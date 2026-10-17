@@ -4,7 +4,7 @@
 
 - 显示名称：Purge Community
 - npm 包：dsh-purge-community
-- 正式版本：1.2.0；本仓库 Releases 是唯一自动查询的发行源
+- 正式版本：1.3.0；本仓库 Releases 默认发行源，上游分支/tag 属显式可选（带不兼容警告）
 - 保留内部 Cordis ID `dsh-purge`、HTTP `/dsh-purge/*` 和原用户数据路径
 - 旧 dsh-purge / dsh-purge-panel 依赖保留为恢复材料，只有社区包留在启用 bundles 中
 
@@ -12,7 +12,7 @@
 
 启动时同时读取 `dsh-agent-loop`、`dsh-system-prompt` 的包版本。两者必须均为 `0.2.1-rc.1` 才启用主插件运行时。缺失、未知或混合版本不会猜测兼容。维护接口仍可使用，以便备份及换回其他发行版。
 
-1.2.0 不允许任何上游旧宿主补丁写入或旧宿主备份还原。自动更新、启动补丁应用和自动重启关闭；这些运行时限制不重写已有配置值。更新或回滚都不等于重新应用旧补丁。
+1.3.0 恢复原版写入能力：应用/还原/卸载/启动自愈/自动应用与自动更新都按配置与界面操作执行，写入前先建 profile 快照。宿主版本或锚点不符合预期时不再整体停摆，改用 `purge-community diagnose`（或面板「状态 → 兼容与诊断」）逐条确认；组件版本不一致时仍会拒绝写入。更新或回滚不等于重新应用宿主补丁。
 
 ## 快照
 
@@ -39,7 +39,7 @@
 ```sh
 node package/bin/community.js status
 node package/bin/community.js backup
-PURGE_DSH_CLI=/absolute/path/to/dsh node package/bin/community.js migrate ./dsh-purge-community-1.2.0.tgz
+PURGE_DSH_CLI=/absolute/path/to/dsh node package/bin/community.js migrate ./dsh-purge-community-1.3.0.tgz
 PURGE_DSH_CLI=/absolute/path/to/dsh node package/bin/community.js rollback <备份ID>
 ```
 

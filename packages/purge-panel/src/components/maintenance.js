@@ -7,14 +7,54 @@ export function CommunityMaintenance() {
     [busy, setBusy] = useState(false),
     [selected, setSelected] = useState(""),
     [releases, setReleases] = useState(null),
-    [release, setRelease] = useState("");
+    [release, setRelease] = useState(""),
+    [check, setCheck] = useState(null),
+    [checkBusy, setCheckBusy] = useState(false),
+    [boost, setBoost] = useState(null);
   const load = () =>
     apiJson("/dsh-purge/community")
       .then(setValue)
       .catch((e) => setNotice(e.message));
+  const loadCheck = () =>
+    apiJson("/dsh-purge/selfcheck")
+      .then(setCheck)
+      .catch(() => setCheck(null));
   useEffect(() => {
     load();
+    loadCheck();
+    loadBoost();
   }, []);
+  const loadBoost = () =>
+    apiJson("/dsh-purge/boost")
+      .then((r) => setBoost(!!r.enabled))
+      .catch(() => setBoost(null));
+  async function toggleBoost() {
+    try {
+      const r = await apiJson("/dsh-purge/boost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: !boost }),
+      });
+      setBoost(!!r.enabled);
+      setNotice(
+        r.enabled
+          ? "破甲强化段已开启，下次重启生效"
+          : "破甲强化段已关闭，下次重启生效",
+      );
+    } catch (e) {
+      setNotice(e.message);
+    }
+  }
+  async function rerunCheck() {
+    setCheckBusy(true);
+    try {
+      setCheck(await apiJson("/dsh-purge/selfcheck"));
+    } catch (e) {
+      setNotice(e.message);
+    } finally {
+      setCheckBusy(false);
+    }
+  }
   async function run(op) {
     if (
       op === "rollback" &&
@@ -113,6 +153,79 @@ export function CommunityMaintenance() {
           ),
         )
       : null,
+    h(
+      "h3",
+      { style: { marginTop: 20 } },
+      "破甲强化段",
+      h(
+        Btn,
+        {
+          tiny: true,
+          disabled: boost === null,
+          onClick: toggleBoost,
+          style: { marginLeft: 8 },
+        },
+        boost === null
+          ? "…"
+          : boost
+            ? "已开启 · 点击关闭"
+            : "已关闭 · 点击开启",
+      ),
+    ),
+    h(
+      "p",
+      { className: "dshpp-hint" },
+      "在系统提示词末尾追加一段与注入同级的强化文本（层级声明 / 拒绝即故障 / 抗谄媚 / 多轮重申）。默认关闭；改动需重启 DSH 生效。",
+    ),
+    h(
+      "h3",
+      { style: { marginTop: 20 } },
+      "破甲自检",
+      h(
+        Btn,
+        {
+          tiny: true,
+          disabled: checkBusy,
+          onClick: rerunCheck,
+          style: { marginLeft: 8 },
+        },
+        checkBusy ? "检测中…" : "重新检测",
+      ),
+    ),
+    check && Array.isArray(check.layers)
+      ? h(
+          "div",
+          null,
+          h(
+            "p",
+            { role: "status" },
+            check.ok
+              ? `全部在位 · 宿主补丁 ${check.patch?.applied ?? "?"}/${check.patch?.total ?? "?"} · DSH ${check.host_version}（${check.level}）`
+              : `有 ${check.layers.filter((l) => !l.ok).length} 层未生效 · 宿主补丁 ${check.patch?.applied ?? "?"}/${check.patch?.total ?? "?"}`,
+          ),
+          h(
+            "ul",
+            {
+              className: "dshpp-hint",
+              style: { paddingLeft: 18, margin: "6px 0" },
+            },
+            check.layers.map((layer) =>
+              h(
+                "li",
+                { key: layer.title },
+                `${layer.ok ? "✓" : "✗"} ${layer.title} ${layer.required === undefined ? "" : `${layer.applied}/${layer.required}`}${layer.note ? `（${layer.note}）` : ""}`,
+                layer.ok || !layer.broken?.length
+                  ? null
+                  : h(
+                      "span",
+                      null,
+                      ` → ${layer.broken.map((b) => "#" + b.id + " " + b.status).join("，")}`,
+                    ),
+              ),
+            ),
+          ),
+        )
+      : h("p", { className: "dshpp-hint" }, "正在检测各层是否生效…"),
     h("h3", { style: { marginTop: 20 } }, "本机备份"),
     h(
       "div",

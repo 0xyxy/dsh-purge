@@ -131,7 +131,7 @@ const ctx = {
     },
   },
   inject: (deps, fn) => {
-    if (deps[0] === "sidebarRightTabs") fn(ctx);
+    if (deps[0] === "sidebarRightTabs" || deps[0] === "sessions") fn(ctx);
   },
 };
 plugin.apply(ctx);
@@ -145,7 +145,12 @@ assert(
 );
 if (process.env.PANEL_CLIENT) {
   assert.equal(plugin.name, "dsh-purge-panel");
-  assert(!seats.some((x) => /conversation\./.test(x.spec.name)));
+  const rewindSeat = seats.find(
+    (x) => x.spec.name === "conversation.input.right",
+  );
+  assert(rewindSeat, "rewind slot is registered");
+  assert.equal(rewindSeat.spec.id, "dsh-purge-rewind");
+  assert.equal(rewindSeat.spec.order, 20);
 }
 assert.equal(definitions.length, 1);
 assert.equal(definitions[0].kind, "dsh-purge");
@@ -212,7 +217,31 @@ const test = async () => {
     await act(async () => {
       o = create(React.createElement(overlay));
     });
-    assert.equal(o.root.findAllByType("button").length, 0);
+    const dialogs = () => o.root.findAll((x) => x.props.role === "dialog");
+    assert.equal(
+      dialogs().length,
+      1,
+      "first-run welcome notice is restored into the overlay",
+    );
+    assert(JSON.stringify(o.toJSON()).includes("用户须知"));
+    assert(
+      !o.root
+        .findAllByType("button")
+        .some((x) =>
+          /dshp-launch|hero-chip|tab-btn/.test(x.props.className || ""),
+        ),
+      "no legacy launcher buttons in the overlay",
+    );
+    await act(async () => {
+      o.root.findByType("input").props.onChange({ target: { checked: true } });
+    });
+    await act(async () => {
+      o.root
+        .findAllByType("button")
+        .find((x) => x.children.join("") === "我已知晓并继续")
+        .props.onClick();
+    });
+    assert.equal(dialogs().length, 0, "acknowledging closes the notice");
     await act(async () => o.unmount());
     assert.equal(
       headStyles.length,
@@ -249,7 +278,7 @@ const test = async () => {
     await act(async () => tree.unmount());
     assert.equal(writes.length, 0);
     console.log(
-      "PASS: isolated overlay, upstream version warning, unavailable service warning, no duplicate chat hooks",
+      "PASS: isolated overlay, first-run welcome notice, upstream version warning, unavailable service warning, restored composer rewind slot",
     );
   }
   console.log(

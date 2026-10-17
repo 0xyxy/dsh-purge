@@ -139,7 +139,7 @@ const ctx = {
     },
   },
   inject: (deps, fn) => {
-    if (deps[0] === "sidebarRightTabs") fn(ctx);
+    if (deps[0] === "sidebarRightTabs" || deps[0] === "sessions") fn(ctx);
   },
 };
 assert.equal(
@@ -150,7 +150,12 @@ assert.equal(
 plugin.apply(ctx);
 if (process.env.PANEL_CLIENT) {
   assert.equal(plugin.name, "dsh-purge-panel");
-  assert(!seats.some((x) => /conversation\./.test(x.spec.name)));
+  const rewindSeat = seats.find(
+    (x) => x.spec.name === "conversation.input.right",
+  );
+  assert(rewindSeat, "rewind slot is registered");
+  assert.equal(rewindSeat.spec.id, "dsh-purge-rewind");
+  assert.equal(rewindSeat.spec.order, 20);
 }
 assert.equal(definitions.length, 1);
 assert.equal(definitions[0].kind, "dsh-purge");

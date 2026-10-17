@@ -57,6 +57,41 @@ const responses = {
   "/dsh-purge/own-servers": { ok: true, content: "example.test" },
   "/dsh-purge/hooks-deny": { ok: true, hooksDenyBypass: false },
   "/dsh-purge/drill-grant": { ok: true, granted: false },
+  "/dsh-purge/selfcheck": {
+    ok: true,
+    host: "/fixture",
+    host_version: "0.2.1-rc.1",
+    qualified: true,
+    level: "qualified",
+    patch: { applied: 74, total: 82 },
+    layers: [
+      {
+        title: "沙箱 confine 直通",
+        kind: "host",
+        ids: [15],
+        ok: true,
+        applied: 1,
+        required: 1,
+        total: 1,
+      },
+      {
+        title: "文件系统围栏禁用",
+        kind: "host",
+        ids: [16],
+        ok: false,
+        applied: 0,
+        required: 1,
+        total: 1,
+      },
+    ],
+    summary: {
+      host: { ok: false, passed: 1, total: 2 },
+      runtime: { ok: true, passed: 1, total: 1 },
+      config: { ok: true, passed: 1, total: 1 },
+      layout: { ok: true, passed: 1, total: 1 },
+    },
+    hints: [],
+  },
 };
 const storage = {
   getItem: () => null,
@@ -114,7 +149,10 @@ const ctx = {
       dict = v.zh;
       return () => {};
     },
-    bind: () => (k) => dict[k] || k,
+    bind:
+      () =>
+      (k, args = {}) =>
+        String(dict[k] || k).replace(/\{(\w+)\}/g, (_, n) => args[n] ?? ""),
   },
   effect: (fn, name) => {
     const dispose = fn();
@@ -136,7 +174,7 @@ const ctx = {
     },
   },
   inject: (deps, fn) => {
-    if (deps[0] === "sidebarRightTabs") fn(ctx);
+    if (deps[0] === "sidebarRightTabs" || deps[0] === "sessions") fn(ctx);
   },
 };
 plugin.apply(ctx);
@@ -150,7 +188,12 @@ assert(
 );
 if (process.env.PANEL_CLIENT) {
   assert.equal(plugin.name, "dsh-purge-community");
-  assert(!seats.some((x) => /conversation\./.test(x.spec.name)));
+  const rewindSeat = seats.find(
+    (x) => x.spec.name === "conversation.input.right",
+  );
+  assert(rewindSeat, "community build restores the composer rewind slot");
+  assert.equal(rewindSeat.spec.id, "dsh-purge-rewind");
+  assert.equal(rewindSeat.spec.order, 20);
 }
 assert.equal(definitions.length, 1);
 assert.equal(definitions[0].kind, "dsh-purge");
@@ -188,11 +231,40 @@ win.confirm = () => true;
       .some((x) => x.children.join("") === "Purge Community"),
   );
   assert(root.findAllByProps({ "aria-label": "社区版维护" }).length);
-  assert.equal(writes.length, 0, "opening never writes configuration");
   assert(
-    button("应用").props.disabled,
-    "unqualified binary patch action disabled",
+    root
+      .findAll((x) => x.props.role === "status")
+      .some((x) => JSON.stringify(x.children).includes("0.2.1-rc.1")),
+    "community compatibility note reports the host version from the backend",
   );
+  assert(
+    button("刷新状态"),
+    "original status page renders in the community build",
+  );
+  assert(
+    JSON.stringify(tree.toJSON()).includes("Hooks 拦截"),
+    "original hooks deny section renders in the community build",
+  );
+  const selfcheckTree = JSON.stringify(tree.toJSON());
+  assert(selfcheckTree.includes("破甲自检"), "self-check block renders");
+  assert(
+    selfcheckTree.includes("沙箱 confine 直通") &&
+      selfcheckTree.includes("文件系统围栏禁用"),
+    "self-check renders every layer reported by /dsh-purge/selfcheck",
+  );
+  assert(
+    selfcheckTree.includes("#16") ||
+      selfcheckTree.includes("1 层未生效") ||
+      selfcheckTree.includes("有 1 层未生效"),
+    "self-check surfaces the failing layer",
+  );
+  assert.equal(writes.length, 0, "opening never writes configuration");
+  for (const label of ["应用", "还原", "卸载"])
+    assert.equal(
+      button(label).props.disabled,
+      false,
+      "community build keeps " + label + " usable",
+    );
   await act(async () => {
     button("立即备份").props.onClick();
     await new Promise((r) => setTimeout(r, 15));

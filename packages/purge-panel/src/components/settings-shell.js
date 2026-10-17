@@ -2,6 +2,7 @@ import { CommunityMaintenance } from "./maintenance.js";
 // UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h, useState, useEffect } from "../shared/react.js";
 import { setTranslate, useT } from "../shared/locale.js";
+import { apiJson } from "../api/client.js";
 import { PURGE_CSS, NATIVE_CSS } from "../styles/index.js";
 import { Btn } from "./primitives.js";
 import { PurgifySection } from "./settings-form.js";
@@ -15,8 +16,55 @@ import {
   requestDrill,
 } from "../state/dock.js";
 
+export function compatibilityLevelText(t, level) {
+  const key = "compat.level." + (level || "unknown");
+  const hit = t(key);
+  return hit && hit !== key ? hit : level || t("unknown");
+}
+
+/**
+ * 社区版兼容提示：读取后端 /dsh-purge/community 报告的宿主版本与兼容级别。
+ * 原版 1.1.71 的 CompatibilityNote 只对官方接口版本告警；社区版换成本 fork
+ * 真实的宿主版本/兼容级别，且永远渲染（不再无条件 return null）。
+ */
+export function CommunityCompatibilityNote() {
+  const t = useT();
+  const [info, setInfo] = useState(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    apiJson("/dsh-purge/community")
+      .then((d) => {
+        if (d && d.ok !== false) setInfo(d);
+        else setError((d && d.error) || "bad response");
+      })
+      .catch((e) => setError((e && e.message) || String(e)));
+  }, []);
+  const compat = (info && info.compatibility) || null;
+  const host = (compat && compat.host_version) || "unknown";
+  const text = compat
+    ? t("compat.host", {
+        version: info && info.version ? info.version : "—",
+        host,
+        level: compatibilityLevelText(t, compat.level),
+      })
+    : error
+      ? t("compat.unavailable", { error })
+      : t("compat.loading");
+  return h(
+    "p",
+    {
+      role: "status",
+      className: "dshpp-hint",
+      style: { margin: "0 20px 10px" },
+    },
+    text,
+    compat && compat.message ? " " + compat.message : "",
+  );
+}
+
 export function CompatibilityNote({ status }) {
-  if (__COMMUNITY__ || !status) return null;
+  if (__COMMUNITY__) return h(CommunityCompatibilityNote);
+  if (!status) return null;
   const v = String(status.plugin_version || "");
   const valid = typeof status.patches_total === "number" && !!v;
   if (valid && v === "1.1.71") return null;

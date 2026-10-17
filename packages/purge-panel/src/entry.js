@@ -12,6 +12,9 @@ import { NS, setTranslate, zh, en } from "./shared/locale.js";
 import { SettingsRoot } from "./components/settings-shell.js";
 import { bindSessionContext } from "./state/session-context.js";
 import { installLegacyVisibility } from "./state/legacy-visibility.js";
+import { installRewindUi } from "./components/rewind.js";
+import { WelcomeNotice } from "./components/welcome.js";
+import { EnvAdaptSendGate } from "./components/env-gate.js";
 
 export const name = __COMMUNITY__ ? "dsh-purge-community" : "dsh-purge-panel";
 
@@ -41,6 +44,14 @@ export function PanelOverlays() {
     react.Fragment,
     null,
     h("style", null, PURGE_CSS),
+    // Restored from 1.1.71 apply(): shell.overlay carried the welcome notice
+    // and the red-team environment gate next to the dock.
+    h(WelcomeNotice, {
+      repo: __COMMUNITY__
+        ? "https://github.com/kingcharleslzy-ai/dsh-purge"
+        : undefined,
+    }),
+    h(EnvAdaptSendGate),
     st.authOpen ? h(AuthGate, { pending: st.pending }) : null,
   );
 }
@@ -51,6 +62,10 @@ export function apply(ctx) {
     host.effect(() => bindSessionContext(host), "panel session context");
   });
   ctx.effect(startGrantSync, "panel grant sync");
+  // Restored from 1.1.71 apply(): conversation.input.right rewind button.
+  ctx.inject(["sessions", "uiWorkspace", "conversation"], (host) =>
+    installRewindUi(host),
+  );
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), "panel locale");
   const t = ctx.locale.bind(NS);
   setTranslate(t);

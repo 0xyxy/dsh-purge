@@ -823,7 +823,7 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
     { className: "dshpp-panel", "aria-label": t("purge.title") },
     h(
       "div",
-      { hidden: page !== "status" || __COMMUNITY__ },
+      { hidden: page !== "status" },
       h(
         "div",
         { className: "dshpp-head" },
@@ -980,13 +980,7 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
         "details",
         null,
         h("summary", null, "高级选项"),
-        __COMMUNITY__
-          ? h(
-              "p",
-              { className: "dshpp-hint" },
-              "旧宿主补丁未验证，此版本不修改 Hooks 拦截。",
-            )
-          : h(HooksDenySection, { onSaved: loadAll }),
+        h(HooksDenySection, { onSaved: loadAll }),
       ),
       h(
         "div",
@@ -995,8 +989,7 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "primary",
-            disabled:
-              patchBusy || uninstallBusy || !overrideLoaded || __COMMUNITY__,
+            disabled: patchBusy || uninstallBusy || !overrideLoaded,
             onClick: () => doAction("apply", "action.apply"),
           },
           patchBusy ? t("btn.apply.busy") : t("btn.apply"),
@@ -1005,9 +998,8 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "danger",
-            disabled: patchBusy || uninstallBusy || __COMMUNITY__,
+            disabled: patchBusy || uninstallBusy,
             onClick: () => doAction("revert", "action.revert"),
-            title: __COMMUNITY__ ? "请使用上方社区版插件回滚" : undefined,
           },
           t("btn.revert"),
         ),
@@ -1015,7 +1007,7 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "solid-danger",
-            disabled: patchBusy || uninstallBusy || __COMMUNITY__,
+            disabled: patchBusy || uninstallBusy,
             onClick: () => setAskUninstall(true),
           },
           uninstallBusy ? t("btn.uninstall.busy") : t("btn.uninstall"),

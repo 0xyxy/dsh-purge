@@ -181,6 +181,11 @@ export function requestDrill(kind) {
   setDock({ open: true, tab: "drill", authOpen: true, pending: pending });
 }
 
+/* Original requestDrillEnv(): open the drill console straight on the Env tab. */
+export function requestDrillEnv() {
+  requestDrill("env");
+}
+
 export let nativeSidebar = null;
 
 export function setNativeSidebar(sidebar) {

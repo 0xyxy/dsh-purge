@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 import path from "node:path";
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
 import { Maintenance, compatibility, ROOT, PACKAGE } from "../lib/community.js";
-import { findDshHome, findAiBase } from "../lib/core.js";
-const [op = "status", argument] = process.argv.slice(2),
+import { findDshHome, findAiBase, patchDrift } from "../lib/core.js";
+import { selfCheck } from "../lib/selfcheck.js";
+import { readBoost, writeBoost } from "../lib/boost.js";
+const rawArgs = process.argv.slice(2);
+// 原版 CLI 的全部动作（apply/revert/uninstall/edit/status）原样保留，
+// purge-community 只做转发，避免两套实现漂移。
+const LEGACY = { apply: "--apply", revert: "--revert", uninstall: "--uninstall", edit: "--edit", "legacy-status": "--status" };
+const [op = "status", argument] = rawArgs,
   home = process.env.DSH_HOME || findDshHome();
 // A supplied Desktop CLI is sufficient for installation. Avoid a recursive host scan
 // from ordinary Node; packaged Electron can resolve its own resources directly.
@@ -17,31 +24,61 @@ function cliAiBase() {
   return fs.existsSync(candidate) ? candidate : "";
 }
 const aiBase = cliAiBase();
-const manager = new Maintenance({
+// 懒构造：status / diagnose / selfcheck 不该因为 profile 目录暂时不可用就直接崩。
+const maintenance = () => new Maintenance({
   home,
   profile: process.env.PURGE_PROFILE_DIR,
   aiBase,
 });
-try {
+if (LEGACY[op]) {
+  const run = spawnSync(process.execPath, [path.join(ROOT, "bin", "dsh-purge.js"), LEGACY[op], ...rawArgs.slice(1)], { stdio: "inherit" });
+  process.exitCode = run.status === null ? 1 : run.status;
+} else try {
   let result;
-  if (op === "status")
+  if (op === "boost") {
+    if (argument === "on" || argument === "off") result = { enabled: writeBoost(argument === "on") };
+    else result = { enabled: readBoost(), hint: "purge-community boost on|off" };
+  } else if (op === "selfcheck" || op === "check-bypass") {
+    const report = await selfCheck(aiBase || "");
+    if (rawArgs.includes("--json")) result = report;
+    else {
+      const lines = [
+        `Purge 破甲自检 · ${report.host || "(未定位宿主)"}`,
+        `  DSH ${report.host_version} · ${report.level} · 宿主补丁 ${report.patch.applied}/${report.patch.total}`,
+        "",
+      ];
+      for (const layer of report.layers) {
+        const mark = layer.ok ? "✓" : "✗";
+        const tail = layer.note || (layer.broken.length ? JSON.stringify(layer.broken) : "");
+        lines.push(`  ${mark} ${layer.title}  ${layer.applied}/${layer.total}${tail ? "  " + tail : ""}`);
+      }
+      lines.push("", report.ok ? "结论：所有层都在位。" : "结论：有层未生效，见上面 ✗ 项。");
+      result = { ok: report.ok, text: lines.join("\n"), summary: report.summary };
+    }
+  } else if (op === "diagnose") {
+    const target = aiBase || findAiBase();
+    const drift = await patchDrift(target);
+    result = { name: "Purge Community", package: PACKAGE, compatibility: compatibility(target), ...drift };
+  } else if (op === "status")
     result = {
       name: "Purge Community",
       package: PACKAGE,
       compatibility: compatibility(aiBase),
-      backups: manager.list(),
+      backups: (() => { try { return maintenance().list(); } catch { return []; } })(),
     };
-  else if (op === "backup") result = await manager.backup("cli");
-  else if (op === "rollback") result = await manager.rollback(argument);
+  else if (op === "backup") result = await maintenance().backup("cli");
+  else if (op === "prune") result = maintenance().prune();
+  else if (op === "usage") result = maintenance().usage();
+  else if (op === "rollback") result = await maintenance().rollback(argument);
   else if (op === "install" || op === "migrate") {
     if (!argument) throw Error("需要安装包路径");
-    result = await manager.install(path.resolve(argument), {
+    result = await maintenance().install(path.resolve(argument), {
       reason: op === "migrate" ? "before-migration" : "before-update",
       migrate: op === "migrate",
     });
   } else
     throw Error(
-      "用法：purge-community status | backup | rollback <备份ID> | migrate <tgz>",
+      "用法：purge-community status | diagnose | selfcheck [--json] | boost on|off | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
     );
   console.log(JSON.stringify(result, null, 2));
 } catch (e) {

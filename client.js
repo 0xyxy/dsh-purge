@@ -8888,6 +8888,9 @@ function requestDrill(kind) {
   }
   setDock({ open: true, tab: "drill", authOpen: true, pending });
 }
+function requestDrillEnv() {
+  requestDrill("env");
+}
 var nativeSidebar = null;
 function setNativeSidebar(sidebar) {
   nativeSidebar = sidebar;
@@ -8952,6 +8955,14 @@ var zh = {
   "envGate.skipNo": "\u8FD4\u56DE",
   "envGate.skipYes": "\u786E\u8BA4\u6682\u4E0D\u914D\u7F6E",
   "envGate.go": "\u53BB\u73AF\u5883\u9002\u914D",
+  "compat.host": "Purge Community {version} \xB7 \u5BBF\u4E3B DSH {host} \xB7 \u517C\u5BB9\u7EA7\u522B\uFF1A{level}",
+  "compat.loading": "\u6B63\u5728\u8BFB\u53D6\u5BBF\u4E3B\u7248\u672C\u2026",
+  "compat.unavailable": "\u8BFB\u4E0D\u5230\u5BBF\u4E3B\u517C\u5BB9\u4FE1\u606F\uFF1A{error}",
+  "compat.level.qualified": "\u5DF2\u56DE\u5F52\u9A8C\u8BC1",
+  "compat.level.unverified": "\u672A\u9A8C\u8BC1\u7248\u672C",
+  "compat.level.mixed": "\u7EC4\u4EF6\u7248\u672C\u4E0D\u4E00\u81F4",
+  "compat.level.no-host": "\u672A\u5B9A\u4F4D\u5BBF\u4E3B",
+  "compat.level.unknown": "\u672A\u77E5",
   "theme.aria": "\u5916\u89C2",
   "theme.white": "\u767D",
   "theme.ink": "\u58A8",
@@ -9291,6 +9302,14 @@ var en = {
   "envGate.skipNo": "Back",
   "envGate.skipYes": "Continue without tools",
   "envGate.go": "Open Env adapt",
+  "compat.host": "Purge Community {version} \xB7 host DSH {host} \xB7 compatibility: {level}",
+  "compat.loading": "Reading the host version\u2026",
+  "compat.unavailable": "Host compatibility is unavailable: {error}",
+  "compat.level.qualified": "regression verified",
+  "compat.level.unverified": "unverified version",
+  "compat.level.mixed": "mixed component versions",
+  "compat.level.no-host": "host not located",
+  "compat.level.unknown": "unknown",
   "theme.aria": "Appearance",
   "theme.white": "Light",
   "theme.ink": "Ink",
@@ -9751,8 +9770,8 @@ function clientGuessSurface() {
     if (typeof location !== "undefined") {
       const port = String(location.port || "");
       if (port === "43120") return "desktop";
-      const host2 = String(location.hostname || "");
-      if (host2 && host2 !== "127.0.0.1" && host2 !== "localhost" && /dsh desktop/i.test(String(location.href || "")))
+      const host3 = String(location.hostname || "");
+      if (host3 && host3 !== "127.0.0.1" && host3 !== "localhost" && /dsh desktop/i.test(String(location.href || "")))
         return "desktop";
     }
   } catch {
@@ -10049,11 +10068,40 @@ function Pill({ value, label }) {
 
 // src/components/maintenance.js
 function CommunityMaintenance() {
-  const [value, setValue] = useState(null), [notice, setNotice] = useState(""), [busy, setBusy] = useState(false), [selected, setSelected] = useState(""), [releases, setReleases] = useState(null), [release, setRelease] = useState("");
+  const [value, setValue] = useState(null), [notice, setNotice] = useState(""), [busy, setBusy] = useState(false), [selected, setSelected] = useState(""), [releases, setReleases] = useState(null), [release, setRelease] = useState(""), [check, setCheck] = useState(null), [checkBusy, setCheckBusy] = useState(false), [boost, setBoost] = useState(null);
   const load = () => apiJson("/dsh-purge/community").then(setValue).catch((e) => setNotice(e.message));
+  const loadCheck = () => apiJson("/dsh-purge/selfcheck").then(setCheck).catch(() => setCheck(null));
   useEffect(() => {
     load();
+    loadCheck();
+    loadBoost();
   }, []);
+  const loadBoost = () => apiJson("/dsh-purge/boost").then((r) => setBoost(!!r.enabled)).catch(() => setBoost(null));
+  async function toggleBoost() {
+    try {
+      const r = await apiJson("/dsh-purge/boost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: !boost })
+      });
+      setBoost(!!r.enabled);
+      setNotice(
+        r.enabled ? "\u7834\u7532\u5F3A\u5316\u6BB5\u5DF2\u5F00\u542F\uFF0C\u4E0B\u6B21\u91CD\u542F\u751F\u6548" : "\u7834\u7532\u5F3A\u5316\u6BB5\u5DF2\u5173\u95ED\uFF0C\u4E0B\u6B21\u91CD\u542F\u751F\u6548"
+      );
+    } catch (e) {
+      setNotice(e.message);
+    }
+  }
+  async function rerunCheck() {
+    setCheckBusy(true);
+    try {
+      setCheck(await apiJson("/dsh-purge/selfcheck"));
+    } catch (e) {
+      setNotice(e.message);
+    } finally {
+      setCheckBusy(false);
+    }
+  }
   async function run(op) {
     if (op === "rollback" && !window.confirm(
       "\u53EA\u56DE\u6EDA Purge \u63D2\u4EF6\u53CA\u5176\u5165\u53E3\uFF0C\u4FDD\u7559\u5F53\u524D\u63D0\u793A\u8BCD\u548C\u8BBE\u7F6E\uFF1B\u5B8C\u6210\u540E\u9700\u624B\u52A8\u91CD\u542F DSH\u3002\u7EE7\u7EED\uFF1F"
@@ -10138,6 +10186,69 @@ function CommunityMaintenance() {
         "\u5B89\u88C5\u6240\u9009\u7248\u672C"
       )
     ) : null,
+    h(
+      "h3",
+      { style: { marginTop: 20 } },
+      "\u7834\u7532\u5F3A\u5316\u6BB5",
+      h(
+        Btn,
+        {
+          tiny: true,
+          disabled: boost === null,
+          onClick: toggleBoost,
+          style: { marginLeft: 8 }
+        },
+        boost === null ? "\u2026" : boost ? "\u5DF2\u5F00\u542F \xB7 \u70B9\u51FB\u5173\u95ED" : "\u5DF2\u5173\u95ED \xB7 \u70B9\u51FB\u5F00\u542F"
+      )
+    ),
+    h(
+      "p",
+      { className: "dshpp-hint" },
+      "\u5728\u7CFB\u7EDF\u63D0\u793A\u8BCD\u672B\u5C3E\u8FFD\u52A0\u4E00\u6BB5\u4E0E\u6CE8\u5165\u540C\u7EA7\u7684\u5F3A\u5316\u6587\u672C\uFF08\u5C42\u7EA7\u58F0\u660E / \u62D2\u7EDD\u5373\u6545\u969C / \u6297\u8C04\u5A9A / \u591A\u8F6E\u91CD\u7533\uFF09\u3002\u9ED8\u8BA4\u5173\u95ED\uFF1B\u6539\u52A8\u9700\u91CD\u542F DSH \u751F\u6548\u3002"
+    ),
+    h(
+      "h3",
+      { style: { marginTop: 20 } },
+      "\u7834\u7532\u81EA\u68C0",
+      h(
+        Btn,
+        {
+          tiny: true,
+          disabled: checkBusy,
+          onClick: rerunCheck,
+          style: { marginLeft: 8 }
+        },
+        checkBusy ? "\u68C0\u6D4B\u4E2D\u2026" : "\u91CD\u65B0\u68C0\u6D4B"
+      )
+    ),
+    check && Array.isArray(check.layers) ? h(
+      "div",
+      null,
+      h(
+        "p",
+        { role: "status" },
+        check.ok ? `\u5168\u90E8\u5728\u4F4D \xB7 \u5BBF\u4E3B\u8865\u4E01 ${check.patch?.applied ?? "?"}/${check.patch?.total ?? "?"} \xB7 DSH ${check.host_version}\uFF08${check.level}\uFF09` : `\u6709 ${check.layers.filter((l) => !l.ok).length} \u5C42\u672A\u751F\u6548 \xB7 \u5BBF\u4E3B\u8865\u4E01 ${check.patch?.applied ?? "?"}/${check.patch?.total ?? "?"}`
+      ),
+      h(
+        "ul",
+        {
+          className: "dshpp-hint",
+          style: { paddingLeft: 18, margin: "6px 0" }
+        },
+        check.layers.map(
+          (layer) => h(
+            "li",
+            { key: layer.title },
+            `${layer.ok ? "\u2713" : "\u2717"} ${layer.title} ${layer.required === void 0 ? "" : `${layer.applied}/${layer.required}`}${layer.note ? `\uFF08${layer.note}\uFF09` : ""}`,
+            layer.ok || !layer.broken?.length ? null : h(
+              "span",
+              null,
+              ` \u2192 ${layer.broken.map((b) => "#" + b.id + " " + b.status).join("\uFF0C")}`
+            )
+          )
+        )
+      )
+    ) : h("p", { className: "dshpp-hint" }, "\u6B63\u5728\u68C0\u6D4B\u5404\u5C42\u662F\u5426\u751F\u6548\u2026"),
     h("h3", { style: { marginTop: 20 } }, "\u672C\u673A\u5907\u4EFD"),
     h(
       "div",
@@ -10172,6 +10283,77 @@ function CommunityMaintenance() {
       "\u5907\u4EFD\u53EA\u4FDD\u5B58\u5728\u672C\u673A\u3002\u56DE\u6EDA\u4FDD\u7559\u5F53\u524D\u63D0\u793A\u8BCD\u3001\u89C4\u5219\u548C\u5176\u4ED6\u63D2\u4EF6\u8BBE\u7F6E\uFF1B\u4E24\u79CD\u5B89\u88C5\u64CD\u4F5C\u5747\u9700\u624B\u52A8\u91CD\u542F DSH\u3002"
     ),
     notice ? h("p", { role: "status" }, notice) : null
+  );
+}
+
+// src/components/advanced.js
+function HooksDenySection({ onSaved }) {
+  const t = useT();
+  const [cfg, setCfg] = useState(null);
+  const [notice, setNotice] = useState({ kind: "idle", text: "" });
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    apiJson("/dsh-purge/hooks-deny").then((d) => {
+      if (d && d.ok) setCfg({ hooksDenyBypass: d.hooksDenyBypass !== false });
+    }).catch(() => {
+    });
+  }, []);
+  const save = (hooksDenyBypass) => {
+    if (!cfg || busy) return;
+    setCfg({ hooksDenyBypass });
+    setBusy(true);
+    apiJson("/dsh-purge/hooks-deny", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ hooksDenyBypass })
+    }).then((d) => {
+      if (d && d.ok) {
+        setCfg({ hooksDenyBypass: d.hooksDenyBypass === true });
+        setNotice({ kind: "ok", text: t("saved.hooksDeny") });
+        if (typeof onSaved === "function") onSaved();
+      } else {
+        setNotice({
+          kind: "error",
+          text: t("err.save", { error: d && d.error || "" })
+        });
+      }
+    }).catch(
+      (e) => setNotice({ kind: "error", text: t("err.save", { error: e.message }) })
+    ).finally(() => setBusy(false));
+  };
+  if (!cfg) return null;
+  return h(
+    "div",
+    { className: "dshpp-cr", style: { marginTop: 12 } },
+    h(
+      "div",
+      { className: "dshpp-sub" },
+      h("h4", null, t("hooksDeny.title")),
+      noticeNode(notice)
+    ),
+    h(
+      "p",
+      {
+        className: "dshpp-hint",
+        style: { margin: "0 0 4px", color: "var(--dshpp-mute)", fontSize: 12 }
+      },
+      t("hooksDeny.hint")
+    ),
+    h(
+      "div",
+      { className: "dshpp-cr-row" },
+      h(
+        "label",
+        null,
+        h("input", {
+          type: "checkbox",
+          checked: cfg.hooksDenyBypass === true,
+          disabled: busy,
+          onChange: (e) => save(e.target.checked)
+        }),
+        t("hooksDeny.bypass")
+      )
+    )
   );
 }
 
@@ -11086,7 +11268,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
     { className: "dshpp-panel", "aria-label": t("purge.title") },
     h(
       "div",
-      { hidden: page !== "status" || true },
+      { hidden: page !== "status" },
       h(
         "div",
         { className: "dshpp-head" },
@@ -11222,11 +11404,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
         "details",
         null,
         h("summary", null, "\u9AD8\u7EA7\u9009\u9879"),
-        true ? h(
-          "p",
-          { className: "dshpp-hint" },
-          "\u65E7\u5BBF\u4E3B\u8865\u4E01\u672A\u9A8C\u8BC1\uFF0C\u6B64\u7248\u672C\u4E0D\u4FEE\u6539 Hooks \u62E6\u622A\u3002"
-        ) : h(HooksDenySection, { onSaved: loadAll })
+        h(HooksDenySection, { onSaved: loadAll })
       ),
       h(
         "div",
@@ -11235,7 +11413,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "primary",
-            disabled: patchBusy || uninstallBusy || !overrideLoaded || true,
+            disabled: patchBusy || uninstallBusy || !overrideLoaded,
             onClick: () => doAction("apply", "action.apply")
           },
           patchBusy ? t("btn.apply.busy") : t("btn.apply")
@@ -11244,9 +11422,8 @@ function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "danger",
-            disabled: patchBusy || uninstallBusy || true,
-            onClick: () => doAction("revert", "action.revert"),
-            title: true ? "\u8BF7\u4F7F\u7528\u4E0A\u65B9\u793E\u533A\u7248\u63D2\u4EF6\u56DE\u6EDA" : void 0
+            disabled: patchBusy || uninstallBusy,
+            onClick: () => doAction("revert", "action.revert")
           },
           t("btn.revert")
         ),
@@ -11254,7 +11431,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "solid-danger",
-            disabled: patchBusy || uninstallBusy || true,
+            disabled: patchBusy || uninstallBusy,
             onClick: () => setAskUninstall(true)
           },
           uninstallBusy ? t("btn.uninstall.busy") : t("btn.uninstall")
@@ -12349,8 +12526,42 @@ function SkillsSection() {
 }
 
 // src/components/settings-shell.js
+function compatibilityLevelText(t, level) {
+  const key = "compat.level." + (level || "unknown");
+  const hit = t(key);
+  return hit && hit !== key ? hit : level || t("unknown");
+}
+function CommunityCompatibilityNote() {
+  const t = useT();
+  const [info, setInfo] = useState(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    apiJson("/dsh-purge/community").then((d) => {
+      if (d && d.ok !== false) setInfo(d);
+      else setError(d && d.error || "bad response");
+    }).catch((e) => setError(e && e.message || String(e)));
+  }, []);
+  const compat = info && info.compatibility || null;
+  const host3 = compat && compat.host_version || "unknown";
+  const text = compat ? t("compat.host", {
+    version: info && info.version ? info.version : "\u2014",
+    host: host3,
+    level: compatibilityLevelText(t, compat.level)
+  }) : error ? t("compat.unavailable", { error }) : t("compat.loading");
+  return h(
+    "p",
+    {
+      role: "status",
+      className: "dshpp-hint",
+      style: { margin: "0 20px 10px" }
+    },
+    text,
+    compat && compat.message ? " " + compat.message : ""
+  );
+}
 function CompatibilityNote({ status }) {
-  if (true) return null;
+  if (true) return h(CommunityCompatibilityNote);
+  if (!status) return null;
   const v = String(status.plugin_version || "");
   const valid = typeof status.patches_total === "number" && !!v;
   if (valid && v === "1.1.71") return null;
@@ -12394,7 +12605,7 @@ function SettingsRoot(props = {}) {
       h(
         "span",
         { className: "dshpp-native-badge" },
-        (true ? "\u793E\u533A\u7248 " : "\u72EC\u7ACB\u754C\u9762 ") + "1.2.0"
+        (true ? "\u793E\u533A\u7248 " : "\u72EC\u7ACB\u754C\u9762 ") + "1.3.1"
       )
     ),
     h(CompatibilityNote, { status: backendStatus }),
@@ -12483,6 +12694,1175 @@ function installLegacyVisibility(doc = globalThis.document) {
   return () => style.remove();
 }
 
+// src/state/rewind-draft.js
+var DRAFT_KEY = "dshp-rewind-draft:";
+var ARM_KEY = "dshp-rewind-arm:";
+var FILL_DELAYS = [0, 50, 180, 400, 800];
+var ARM_TTL_MS = 45 * 1e3;
+var seenAt = 0;
+var host2 = null;
+var workspace = null;
+var conversation = null;
+var pendingComposer = { sessionId: "", text: "", at: 0 };
+var armedFill = { sessionId: "", text: "", at: 0 };
+function storage() {
+  try {
+    return typeof window !== "undefined" ? window.sessionStorage : null;
+  } catch {
+    return null;
+  }
+}
+function bindRewindHost(ctx) {
+  host2 = ctx || null;
+  workspace = ctx && ctx.uiWorkspace || null;
+  conversation = ctx && ctx.conversation || null;
+}
+function hostSessions() {
+  return host2 && host2.sessions || null;
+}
+function getRewindSeenAt() {
+  return seenAt;
+}
+function noteRewindAt(at) {
+  if (at) seenAt = at;
+}
+function rewindText(t, key, fallback) {
+  try {
+    if (typeof t === "function") {
+      const value = t(key);
+      if (value && value !== key) return value;
+    }
+  } catch {
+  }
+  return fallback;
+}
+function currentSessionId(sessions) {
+  try {
+    const selected = workspace?.selection?.getSnapshot?.()?.sessionId;
+    if (typeof selected === "string" && selected) return selected;
+  } catch {
+  }
+  try {
+    const snap = (sessions?.list || host2?.sessions?.list)?.getSnapshot?.();
+    if (typeof snap?.current === "string" && snap.current) return snap.current;
+  } catch {
+  }
+  return "";
+}
+function sessionKnown(sessions, sessionId) {
+  try {
+    const snap = sessions?.list?.getSnapshot?.();
+    if (!snap || !sessionId) return false;
+    if (snap.byId && Object.prototype.hasOwnProperty.call(snap.byId, sessionId))
+      return true;
+    if (Array.isArray(snap.ids) && snap.ids.includes(sessionId)) return true;
+  } catch {
+  }
+  return false;
+}
+function waitMs(ms) {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && window.setTimeout)
+      window.setTimeout(resolve, ms);
+    else setTimeout(resolve, ms);
+  });
+}
+function isPluginDraft(text) {
+  const value = String(text || "").trim();
+  if (!value) return false;
+  return /^\[MNEMON\]/i.test(value) || /MNEMON RUNTIME MEMORY SNAPSHOT/i.test(value) || /^MNEMON VIEW TOOLS/im.test(value);
+}
+function writeDraft(sessionId, text) {
+  if (!sessionId) return;
+  const value = isPluginDraft(text) ? "" : text || "";
+  pendingComposer = { sessionId, text: value, at: Date.now() };
+  try {
+    storage()?.setItem(DRAFT_KEY + sessionId, value);
+  } catch {
+  }
+}
+function peekDraft(sessionId) {
+  if (!sessionId) return "";
+  if (pendingComposer.sessionId === sessionId && pendingComposer.text)
+    return pendingComposer.text;
+  try {
+    return storage()?.getItem(DRAFT_KEY + sessionId) || "";
+  } catch {
+    return "";
+  }
+}
+function clearStoredDraft(sessionId) {
+  if (!sessionId) return;
+  if (pendingComposer.sessionId === sessionId)
+    pendingComposer = { sessionId: "", text: "", at: 0 };
+  try {
+    storage()?.removeItem(DRAFT_KEY + sessionId);
+  } catch {
+  }
+  try {
+    storage()?.removeItem(ARM_KEY + sessionId);
+  } catch {
+  }
+}
+function armComposerFill(sessionId, text) {
+  if (!sessionId || !text || isPluginDraft(text)) return;
+  const at = Date.now();
+  armedFill = { sessionId, text, at };
+  writeDraft(sessionId, text);
+  try {
+    storage()?.setItem(ARM_KEY + sessionId, String(at));
+  } catch {
+  }
+}
+function takeArmedFill(sessionId) {
+  if (!sessionId) return "";
+  let text = "";
+  let at = 0;
+  if (armedFill.sessionId === sessionId && armedFill.text) {
+    text = armedFill.text;
+    at = armedFill.at;
+  } else {
+    text = peekDraft(sessionId);
+    try {
+      at = Number(storage()?.getItem(ARM_KEY + sessionId) || 0);
+    } catch {
+      at = 0;
+    }
+  }
+  if (!text || !at || Date.now() - at > ARM_TTL_MS) {
+    if (text && (!at || Date.now() - at > ARM_TTL_MS))
+      clearStoredDraft(sessionId);
+    return "";
+  }
+  clearStoredDraft(sessionId);
+  armedFill = { sessionId: "", text: "", at: 0 };
+  return text;
+}
+function conversationFace() {
+  if (conversation) return conversation;
+  if (host2?.conversation) return host2.conversation;
+  if (typeof host2?.get === "function") {
+    try {
+      return host2.get("conversation");
+    } catch {
+      return void 0;
+    }
+  }
+  return void 0;
+}
+function conversationInput(sessionId) {
+  try {
+    const input = conversationFace()?.input;
+    if (!input || !sessionId) return null;
+    if (typeof input.shell === "function") {
+      try {
+        return input.shell(sessionId);
+      } catch {
+      }
+    }
+    const sessions = host2?.sessions;
+    const actx = typeof sessions?.scope === "function" ? sessions.scope(sessionId) : void 0;
+    if (typeof input.for === "function" && actx) return input.for(actx);
+    return null;
+  } catch {
+    return null;
+  }
+}
+function liveDraft(sessionId, inputActions) {
+  try {
+    const fromActions = inputActions?.state?.getSnapshot?.()?.draft;
+    if (typeof fromActions === "string") return fromActions;
+  } catch {
+  }
+  try {
+    const draft = conversationInput(sessionId)?.state?.getSnapshot?.()?.draft;
+    if (typeof draft === "string") return draft;
+  } catch {
+  }
+  return "";
+}
+function hostSetDraft(sessionId, text) {
+  if (!sessionId) return false;
+  try {
+    const input = conversationInput(sessionId);
+    if (input && typeof input.setDraft === "function") {
+      input.setDraft(text || "");
+      return true;
+    }
+  } catch {
+  }
+  return false;
+}
+function fillComposer(inputActions, text) {
+  if (inputActions && typeof inputActions.setDraft === "function") {
+    try {
+      inputActions.setDraft(text || "");
+    } catch {
+    }
+  }
+}
+function scheduleComposerFill(sessionId, text, inputActions) {
+  if (!sessionId || !text || isPluginDraft(text)) return () => {
+  };
+  let stopped = false;
+  let filled = false;
+  const timers = [];
+  const setTimer = typeof window !== "undefined" && window.setTimeout ? (fn, ms) => window.setTimeout(fn, ms) : (fn, ms) => setTimeout(fn, ms);
+  const clearTimer = typeof window !== "undefined" && window.clearTimeout ? (id) => window.clearTimeout(id) : (id) => clearTimeout(id);
+  const tryFill = () => {
+    if (stopped) return;
+    const current = liveDraft(sessionId, inputActions);
+    if (filled && current !== text) {
+      stopped = true;
+      return;
+    }
+    if (current && current !== text) {
+      stopped = true;
+      return;
+    }
+    fillComposer(inputActions, text);
+    hostSetDraft(sessionId, text);
+    filled = true;
+  };
+  for (const ms of FILL_DELAYS) timers.push(setTimer(tryFill, ms));
+  return () => {
+    stopped = true;
+    for (const id of timers) {
+      try {
+        clearTimer(id);
+      } catch {
+      }
+    }
+  };
+}
+function scheduleEchoClear(sessionId, inputActions) {
+  if (!sessionId) return () => {
+  };
+  let last = "";
+  let stopped = false;
+  const timers = [];
+  const setTimer = typeof window !== "undefined" && window.setTimeout ? (fn, ms) => window.setTimeout(fn, ms) : (fn, ms) => setTimeout(fn, ms);
+  const clearTimer = typeof window !== "undefined" && window.clearTimeout ? (id) => window.clearTimeout(id) : (id) => clearTimeout(id);
+  const tryClear = () => {
+    if (stopped || !last) return;
+    const current = String(liveDraft(sessionId, inputActions) || "").trim();
+    if (!current) {
+      stopped = true;
+      return;
+    }
+    if (current !== last) return;
+    fillComposer(inputActions, "");
+    hostSetDraft(sessionId, "");
+    clearStoredDraft(sessionId);
+    stopped = true;
+  };
+  apiJson("/dsh-purge/last-user?sessionId=" + encodeURIComponent(sessionId)).then((data) => {
+    if (stopped) return;
+    last = String(data?.text || "").trim();
+    if (!last || isPluginDraft(last)) return;
+    tryClear();
+    for (const ms of [0, 50, 180, 400]) timers.push(setTimer(tryClear, ms));
+  }).catch(() => {
+  });
+  return () => {
+    stopped = true;
+    for (const id of timers) {
+      try {
+        clearTimer(id);
+      } catch {
+      }
+    }
+  };
+}
+async function dropInheritedQueue(sessions, sessionId) {
+  if (!sessions || !sessionId) return;
+  const drop = async () => {
+    try {
+      const actx = typeof sessions.scope === "function" ? sessions.scope(sessionId) : void 0;
+      const face = typeof sessions.sessionOf === "function" ? sessions.sessionOf(actx) : void 0;
+      const queue = face?.getSnapshot?.()?.queue || [];
+      for (const item of queue) {
+        const id = item?.id || item?.itemId;
+        if (!id) continue;
+        try {
+          await face.updateQueue?.(id, { kind: "remove" });
+        } catch {
+        }
+      }
+    } catch {
+    }
+  };
+  await drop();
+  if (typeof window !== "undefined" && window.setTimeout)
+    window.setTimeout(() => {
+      drop();
+    }, 80);
+}
+async function openRewoundSession(sessions, sessionId) {
+  if (!sessionId) return;
+  let lastError = null;
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    if (sessions && typeof sessions.refresh === "function" && !sessionKnown(sessions, sessionId)) {
+      try {
+        await sessions.refresh();
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    const known = sessionKnown(sessions, sessionId);
+    if (known || typeof sessions?.open === "function") {
+      try {
+        if (workspace && typeof workspace.openSession === "function") {
+          workspace.openSession(sessionId);
+        } else if (typeof sessions?.open === "function") {
+          sessions.open(sessionId);
+        } else {
+          throw new Error("\u6253\u4E0D\u5F00\u56DE\u9000\u540E\u7684\u4F1A\u8BDD");
+        }
+        const selected = workspace?.selection?.getSnapshot?.()?.sessionId;
+        if (!workspace || selected === sessionId) {
+          await dropInheritedQueue(sessions, sessionId);
+          if (typeof window !== "undefined" && window.setTimeout)
+            window.setTimeout(() => {
+              dropInheritedQueue(sessions, sessionId);
+            }, 250);
+          return;
+        }
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    await waitMs(120);
+  }
+  throw new Error(lastError && lastError.message || "\u56DE\u9000\u540E\u7684\u4F1A\u8BDD\u6CA1\u6709\u6253\u5F00");
+}
+
+// src/components/rewind.js
+var REWIND_CSS = `
+.dshp-rewind-wrap{position:relative;display:inline-flex}
+.dshp-rewind{appearance:none;display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary,currentColor);font:12px/1 var(--ds-font-sans,system-ui,sans-serif);cursor:pointer}
+.dshp-rewind:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.12));color:var(--dsw-alias-label-primary,currentColor)}
+.dshp-rewind:disabled{opacity:.4;cursor:default}
+.dshp-rewind svg{display:block}
+.dshp-rewind-menu{position:fixed;z-index:2147483000;box-sizing:border-box;min-width:220px;padding:4px;border:0;border-radius:12px;background:var(--dsw-specific-menu,#fff);color:var(--dsw-alias-label-primary,#1a1a1a);--dsw-elevation-stroke-color:var(--dsw-alias-border-l1);box-shadow:var(--dsw-elevation-prominent,0 8px 24px rgba(0,0,0,.16));transform:translateY(-100%)}
+body[data-ds-dark-theme] .dshp-rewind-menu{background:var(--dsw-specific-menu,#32312d);color:var(--dsw-alias-label-primary,#e6e2db);--dsw-elevation-stroke-color:var(--dsw-alias-border-l1,#3f3d38);box-shadow:var(--dsw-elevation-prominent,0 10px 28px rgba(0,0,0,.45))}
+.dshp-rewind-item{display:flex;flex-direction:column;gap:2px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;cursor:pointer;font:12px/1.3 var(--ds-font-sans,system-ui,sans-serif)}
+.dshp-rewind-item:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.12))}
+.dshp-rewind-item b{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary,inherit)}
+.dshp-rewind-item span{color:var(--dsw-alias-label-tertiary,#9a958c);font-size:11px}
+body[data-ds-dark-theme] .dshp-rewind-item span{color:var(--dsw-alias-label-tertiary,#a8a39a)}
+`;
+function rewindMenuNode(t, menuPos, menuRef, runRewind) {
+  return h(
+    "div",
+    {
+      className: "dshp-rewind-menu",
+      role: "menu",
+      ref: menuRef,
+      style: menuPos ? { left: menuPos.left + "px", top: menuPos.top + "px" } : { left: "8px", bottom: "48px", transform: "none" }
+    },
+    h(
+      "button",
+      {
+        type: "button",
+        className: "dshp-rewind-item",
+        onMouseDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        onClick: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          runRewind("once");
+        }
+      },
+      h("b", null, rewindText(t, "rewind.once", "\u56DE\u9000\u4E00\u6B21")),
+      h(
+        "span",
+        null,
+        rewindText(
+          t,
+          "rewind.once.hint",
+          "\u628A\u8FD9\u4E00\u8F6E\u53D1\u51FA\u53BB\u7684\u90A3\u53E5\u653E\u56DE\u8F93\u5165\u6846\uFF0C\u5E76\u6E05\u6389\u8FD9\u4E00\u8F6E"
+        )
+      )
+    ),
+    h(
+      "button",
+      {
+        type: "button",
+        className: "dshp-rewind-item",
+        onMouseDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        onClick: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          runRewind("round");
+        }
+      },
+      h("b", null, rewindText(t, "rewind.round", "\u56DE\u9000\u4E0A\u4E00\u8F6E")),
+      h(
+        "span",
+        null,
+        rewindText(
+          t,
+          "rewind.round.hint",
+          "\u628A\u8FD9\u4E00\u8F6E\u53D1\u51FA\u53BB\u7684\u90A3\u53E5\u653E\u56DE\u8F93\u5165\u6846\uFF1B\u5B50\u4EE3\u7406\u4E5F\u53EA\u64A4\u8FD9\u4E00\u8F6E"
+        )
+      )
+    )
+  );
+}
+var RewindFallback = class extends Component {
+  constructor(p) {
+    super(p);
+    this.state = { menu: false, busy: false, notice: "", menuPos: null };
+    this.wrap = null;
+    this.menuEl = null;
+    this.onDoc = (event) => {
+      if (this.wrap && this.wrap.contains(event.target)) return;
+      if (this.menuEl && this.menuEl.contains(event.target)) return;
+      this.setState({ menu: false });
+    };
+  }
+  componentDidMount() {
+    if (typeof document !== "undefined" && document.addEventListener)
+      document.addEventListener("mousedown", this.onDoc);
+  }
+  componentWillUnmount() {
+    if (typeof document !== "undefined" && document.removeEventListener)
+      document.removeEventListener("mousedown", this.onDoc);
+  }
+  run(mode) {
+    const sessionId = this.props.sessionId || currentSessionId(hostSessions());
+    if (!sessionId || this.state.busy) return;
+    this.setState({ busy: true, menu: false, notice: "" });
+    apiJson("/dsh-purge/rewind", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sessionId, mode })
+    }).then(async (data) => {
+      if (!data || !data.ok || !data.sessionId || data.cleared === false) {
+        throw new Error(data && data.error || "\u6CA1\u6709\u6E05\u6389\u4E4B\u524D\u53D1\u9001\u7684\u5185\u5BB9");
+      }
+      noteRewindAt(data.at);
+      const text = isPluginDraft(data.text) ? "" : data.text || "";
+      armComposerFill(data.sessionId, text);
+      await openRewoundSession(hostSessions(), data.sessionId);
+      scheduleComposerFill(data.sessionId, text);
+      this.setState({ busy: false });
+    }).catch((e) => {
+      this.setState({
+        busy: false,
+        notice: "\u56DE\u9000\u5931\u8D25: " + String(e && e.message || e)
+      });
+    });
+  }
+  openMenu() {
+    const rect = this.wrap && this.wrap.getBoundingClientRect ? this.wrap.getBoundingClientRect() : null;
+    this.setState({
+      menu: !this.state.menu,
+      notice: "",
+      menuPos: rect ? {
+        left: Math.max(8, rect.right - 228),
+        top: Math.max(8, rect.top - 8)
+      } : null
+    });
+  }
+  render() {
+    const sessionId = this.props.sessionId || currentSessionId(hostSessions());
+    const t = this.props.t || null;
+    const label = this.state.busy ? "\u56DE\u9000\u4E2D\u2026" : this.state.notice ? this.state.notice.slice(0, 18) : "\u56DE\u9000";
+    return h(
+      "div",
+      {
+        className: "dshp-rewind-wrap",
+        ref: (node) => {
+          this.wrap = node;
+        }
+      },
+      h("style", null, REWIND_CSS),
+      h(
+        "button",
+        {
+          type: "button",
+          className: "dshp-rewind",
+          disabled: this.state.busy || !sessionId,
+          onMouseDown: (e) => e.preventDefault(),
+          onClick: (e) => {
+            e.preventDefault();
+            this.openMenu();
+          }
+        },
+        label
+      ),
+      this.state.menu ? rewindMenuNode(
+        t,
+        this.state.menuPos,
+        (node) => {
+          this.menuEl = node;
+        },
+        (mode) => this.run(mode)
+      ) : null
+    );
+  }
+};
+var RewindSafe = class extends Component {
+  constructor(p) {
+    super(p);
+    this.state = { failed: false };
+  }
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error) {
+    try {
+      console.error("[dsh-purge] rewind slot:", error);
+    } catch {
+    }
+  }
+  render() {
+    if (this.state.failed) return h(RewindFallback, this.props);
+    return h(RewindButton, this.props);
+  }
+};
+function RewindButton(props) {
+  const fallbackT = useT();
+  const t = props.t || fallbackT;
+  const sessions = hostSessions();
+  const inputActions = props.inputActions;
+  const sessionId = props.sessionId || currentSessionId(sessions);
+  const wrapRef = useRef(null);
+  const menuRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [menu, setMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState(null);
+  useEffect(() => {
+    if (!sessionId) return;
+    const armed = takeArmedFill(sessionId);
+    if (armed) {
+      scheduleComposerFill(sessionId, armed, inputActions);
+      return;
+    }
+    scheduleEchoClear(sessionId, inputActions);
+  }, [sessionId, inputActions]);
+  useEffect(() => {
+    if (!menu) return;
+    if (typeof document === "undefined" || !document.addEventListener)
+      return void 0;
+    const onDoc = (event) => {
+      if (wrapRef.current && wrapRef.current.contains(event.target)) return;
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      setMenu(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menu]);
+  const runRewind = async (mode) => {
+    if (!sessionId || busy) return;
+    setBusy(true);
+    setMenu(false);
+    setNotice("");
+    try {
+      const data = await apiJson("/dsh-purge/rewind", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sessionId, mode })
+      });
+      if (!data || !data.ok || !data.sessionId || data.cleared === false) {
+        throw new Error(data && data.error || "\u6CA1\u6709\u6E05\u6389\u4E4B\u524D\u53D1\u9001\u7684\u5185\u5BB9");
+      }
+      noteRewindAt(data.at);
+      const text = isPluginDraft(data.text) ? "" : data.text || "";
+      armComposerFill(data.sessionId, text);
+      await openRewoundSession(sessions, data.sessionId);
+      scheduleComposerFill(data.sessionId, text);
+    } catch (e) {
+      const message = rewindText(t, "rewind.fail", "\u56DE\u9000\u5931\u8D25: {error}").replace(
+        "{error}",
+        String(e && e.message || e)
+      );
+      setNotice(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const onClick = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    if (!sessionId || busy) return;
+    if (menu) {
+      setMenu(false);
+      return;
+    }
+    const rect = wrapRef.current?.getBoundingClientRect?.();
+    if (rect) {
+      setMenuPos({
+        left: Math.max(8, rect.right - 228),
+        top: Math.max(8, rect.top - 8)
+      });
+    }
+    setNotice("");
+    setMenu(true);
+  };
+  const failLabel = notice ? notice.length > 18 ? notice.slice(0, 18) + "\u2026" : notice : "";
+  const label = busy ? rewindText(t, "rewind.busy", "\u56DE\u9000\u4E2D\u2026") : failLabel || rewindText(t, "rewind.label", "\u56DE\u9000");
+  const title = notice || rewindText(t, "rewind.aria", "\u56DE\u9000");
+  return h(
+    "div",
+    { className: "dshp-rewind-wrap", ref: wrapRef },
+    h("style", null, REWIND_CSS),
+    h(
+      "button",
+      {
+        type: "button",
+        className: "dshp-rewind",
+        title,
+        "aria-label": rewindText(t, "rewind.aria", "\u56DE\u9000"),
+        "aria-expanded": menu ? "true" : "false",
+        disabled: busy || !sessionId,
+        onMouseDown: (e) => e.preventDefault(),
+        onClick
+      },
+      h(
+        "svg",
+        {
+          viewBox: "0 0 16 16",
+          width: "14",
+          height: "14",
+          "aria-hidden": true
+        },
+        h("path", {
+          fill: "currentColor",
+          d: "M7.2 3.2 3.4 7l3.8 3.8V8.6c2.8 0 4.7.7 5.9 2.3-.2-2.8-1.9-5.2-5.9-5.6V3.2z"
+        })
+      ),
+      label
+    ),
+    menu ? rewindMenuNode(t, menuPos, menuRef, runRewind) : null
+  );
+}
+function installRewindWatch(ctx) {
+  const sessions = ctx && ctx.sessions || hostSessions();
+  if (!sessions) return () => {
+  };
+  const tick = async () => {
+    try {
+      const data = await apiJson("/dsh-purge/rewind");
+      if (!data || !data.sessionId || !data.at || data.at <= getRewindSeenAt())
+        return;
+      noteRewindAt(data.at);
+      const current = currentSessionId(sessions);
+      if (current && current !== data.parentId) return;
+      const text = isPluginDraft(data.text) ? "" : data.text || "";
+      armComposerFill(data.sessionId, text);
+      scheduleComposerFill(data.sessionId, text);
+      await openRewoundSession(sessions, data.sessionId);
+      scheduleComposerFill(data.sessionId, text);
+    } catch {
+    }
+  };
+  const timer = typeof window !== "undefined" && window.setInterval ? window.setInterval(tick, 1200) : null;
+  return () => {
+    if (timer && typeof window !== "undefined" && window.clearInterval)
+      window.clearInterval(timer);
+  };
+}
+function installRewindUi(ctx) {
+  bindRewindHost(ctx);
+  ctx.slots.inject(
+    "conversation.input.right",
+    () => ctx.slots.register(
+      {
+        name: "conversation.input.right",
+        id: "dsh-purge-rewind",
+        order: 20,
+        inject: (sessionId) => ({ sessionId, t: ctx.locale.bind(NS) })
+      },
+      RewindSafe
+    )
+  );
+  ctx.effect(() => installRewindWatch(ctx), "dsh-purge: rewind watch");
+}
+
+// src/components/welcome.js
+var WELCOME_KEY = "dsh-purge-user-notice-v1";
+function readWelcomeAck() {
+  try {
+    return window.localStorage.getItem(WELCOME_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeWelcomeAck() {
+  try {
+    window.localStorage.setItem(WELCOME_KEY, "1");
+  } catch {
+  }
+}
+function WelcomeNotice(props = {}) {
+  const t = useT();
+  const [open, setOpen] = useState(() => !readWelcomeAck());
+  const [checked, setChecked] = useState(false);
+  if (!open) return null;
+  const repo = props.repo || t("welcome.repo");
+  return h(
+    "div",
+    { className: "dshp-auth-mask", role: "dialog", "aria-modal": "true" },
+    h(
+      "div",
+      { className: "dshp-auth-modal", style: { width: "min(560px,100%)" } },
+      h("h2", null, t("welcome.title")),
+      h(
+        "div",
+        {
+          className: "muted",
+          style: {
+            color: "var(--dsw-alias-label-secondary,#999)",
+            fontSize: 12
+          }
+        },
+        t("welcome.lead")
+      ),
+      h("div", { className: "dshp-auth-warn" }, t("welcome.warn")),
+      h(
+        "div",
+        {
+          className: "dshp-auth-legal",
+          style: { height: "auto", maxHeight: 280 }
+        },
+        h("p", null, t("welcome.body")),
+        h(
+          "p",
+          null,
+          h(
+            "a",
+            {
+              href: repo,
+              target: "_blank",
+              rel: "noopener noreferrer",
+              style: {
+                color: "var(--dsw-alias-label-brand, #8fbf9a)",
+                wordBreak: "break-all"
+              }
+            },
+            repo
+          )
+        ),
+        h("h3", null, t("welcome.bans")),
+        h("p", null, t("welcome.ban1")),
+        h("p", null, t("welcome.ban2")),
+        h("p", null, t("welcome.ban3"))
+      ),
+      h(
+        "div",
+        { className: "dshp-auth-checks" },
+        h(
+          "label",
+          null,
+          h("input", {
+            type: "checkbox",
+            checked,
+            onChange: (e) => setChecked(!!(e && e.target && e.target.checked))
+          }),
+          h("span", null, t("welcome.check"))
+        )
+      ),
+      h(
+        "div",
+        { className: "dshp-auth-ops" },
+        h(
+          "button",
+          {
+            type: "button",
+            className: "primary",
+            disabled: !checked,
+            onClick: () => {
+              if (!checked) return;
+              writeWelcomeAck();
+              setOpen(false);
+            }
+          },
+          t("welcome.ok")
+        )
+      )
+    )
+  );
+}
+
+// src/state/redteam-mode.js
+function isRedteamPresetId(value) {
+  const text = String(value || "").trim();
+  if (!text) return false;
+  if (text === "redteam") return true;
+  if (/^red[\s_-]*team$/i.test(text)) return true;
+  const label = text.replace(/不是红队/g, "").replace(/非红队/g, "");
+  if (/红队/.test(label)) return true;
+  return false;
+}
+function readSessionAgentPreset(sess) {
+  if (!sess || typeof sess !== "object") return "";
+  try {
+    const pv = sess.projectionValues;
+    if (pv && typeof pv.agentPreset === "string") return pv.agentPreset;
+  } catch {
+  }
+  try {
+    if (typeof sess.agentPreset === "string") return sess.agentPreset;
+  } catch {
+  }
+  try {
+    const header = sess.header;
+    if (header && typeof header.agentPreset === "string")
+      return header.agentPreset;
+  } catch {
+  }
+  return "";
+}
+function isRedteamModeActive() {
+  try {
+    const sessions = hostSessions();
+    const sid = currentSessionId(sessions);
+    if (sid && sessions) {
+      try {
+        const snap = typeof sessions.list?.getSnapshot === "function" ? sessions.list.getSnapshot() : null;
+        const sess = snap && snap.byId ? snap.byId[sid] : null;
+        if (isRedteamPresetId(readSessionAgentPreset(sess))) return true;
+      } catch {
+      }
+      try {
+        const actx = typeof sessions.scope === "function" ? sessions.scope(sid) : void 0;
+        const face = typeof sessions.sessionOf === "function" ? sessions.sessionOf(actx) : void 0;
+        const faceSnap = face && typeof face.getSnapshot === "function" ? face.getSnapshot() : face;
+        if (isRedteamPresetId(readSessionAgentPreset(faceSnap))) return true;
+      } catch {
+      }
+    }
+  } catch {
+  }
+  if (typeof document === "undefined" || !document.querySelector) return false;
+  try {
+    const semantic = document.querySelector(
+      "[data-agent-preset='redteam'], [data-preset-id='redteam'], [data-mode='redteam']"
+    );
+    if (semantic) return true;
+    const nodes = document.querySelectorAll(
+      "[class*='seat' i][class*='label' i], [class*='seatLabel' i], button[class*='seat' i], [role='button'][class*='seat' i]"
+    );
+    for (const el of nodes) {
+      const text = String(el.textContent || "").replace(/\s+/g, " ").trim();
+      if (/红队模式/.test(text) || /^RedTeam\b/i.test(text)) return true;
+    }
+  } catch {
+  }
+  try {
+    const labels = document.querySelectorAll(
+      "[class*='label' i][class*='preset' i], [class*='presetLabel' i], [title*='\u7EA2\u961F'], [title*='RedTeam']"
+    );
+    for (const el of labels) {
+      const text = String(el.textContent || "").trim();
+      if (/红队模式/.test(text) || /^RedTeam\b/i.test(text)) return true;
+      if (isRedteamPresetId(text)) return true;
+    }
+  } catch {
+  }
+  return false;
+}
+function looksLikeSendControl(el) {
+  if (!el || el.nodeType !== 1) return false;
+  const btn = el.closest("button, [role='button']");
+  if (!btn) return false;
+  if (btn.closest(".dshp-dock, .dshp-auth-mask, .rt-dock, .dshp-env-gate"))
+    return false;
+  const label = [
+    btn.getAttribute("aria-label"),
+    btn.getAttribute("title"),
+    btn.getAttribute("data-testid"),
+    btn.textContent
+  ].filter(Boolean).join(" ");
+  if (/停止|Stop/i.test(label) && !/发送|Send/i.test(label)) return false;
+  if (/发送|Submit|Send(?!\s*feedback)/i.test(label)) return true;
+  try {
+    const card = btn.closest("[data-composer-card], [data-composer-seat]");
+    if (card) {
+      const cls = String(btn.className || "");
+      if (/primary/i.test(cls) && btn.querySelector("svg")) return true;
+    }
+  } catch {
+  }
+  if (btn.type === "submit") {
+    const form = btn.closest("form");
+    if (form && form.querySelector("textarea, [contenteditable='true']"))
+      return true;
+  }
+  return false;
+}
+
+// src/components/env-gate.js
+function fetchEnvAdaptStatus() {
+  return fetch("/redteam/api", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ op: "platformEnvAdaptStatus" })
+  }).then((r) => r.json()).catch(() => null);
+}
+function EnvAdaptSendGate() {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [confirmSkip, setConfirmSkip] = useState(false);
+  const [status, setStatus] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const cacheRef = useRef({ at: 0, ready: false });
+  const refresh = useCallback(async () => {
+    const r = await fetchEnvAdaptStatus();
+    const ready = !!(r && r.ready);
+    cacheRef.current = {
+      at: Date.now(),
+      ready,
+      skipped: !!(r && r.skipped)
+    };
+    setStatus(r);
+    return r;
+  }, []);
+  const blockAndOpen = useCallback(() => {
+    setConfirmSkip(false);
+    refresh();
+    if (!readDrillAuth()) {
+      setOpen(false);
+      requestDrillEnv();
+      return true;
+    }
+    setOpen(true);
+    return true;
+  }, [refresh]);
+  const mustBlockSubmit = useCallback(() => {
+    if (!isRedteamModeActive()) return false;
+    const cached = cacheRef.current;
+    if (!cached.at || Date.now() - cached.at > 2500) {
+      refresh().catch(() => {
+      });
+    }
+    if (cached.ready) return false;
+    blockAndOpen();
+    return true;
+  }, [blockAndOpen, refresh]);
+  useEffect(() => {
+    const patched = /* @__PURE__ */ new WeakMap();
+    const patchedShells = [];
+    const patchShell = (shell) => {
+      if (!shell || patched.has(shell)) return;
+      if (typeof shell.submit !== "function") return;
+      const origSubmit = shell.submit;
+      const origActionsSubmit = shell.actions && typeof shell.actions.submit === "function" ? shell.actions.submit : null;
+      patched.set(shell, { origSubmit, origActionsSubmit });
+      patchedShells.push(shell);
+      const bound = origSubmit.bind(shell);
+      shell.submit = function gatedSubmit(mode) {
+        try {
+          if (mustBlockSubmit()) return;
+        } catch {
+        }
+        return bound(mode);
+      };
+      if (shell.actions && typeof shell.actions === "object") {
+        shell.actions.submit = () => shell.submit("queue");
+      }
+    };
+    const tick = () => {
+      try {
+        const sessions = hostSessions();
+        const sid = currentSessionId(sessions);
+        if (!sid) return;
+        patchShell(conversationInput(sid));
+      } catch {
+      }
+    };
+    tick();
+    const iv = typeof window !== "undefined" && window.setInterval ? window.setInterval(tick, 400) : null;
+    return () => {
+      if (iv && typeof window !== "undefined" && window.clearInterval)
+        window.clearInterval(iv);
+      for (const shell of patchedShells) {
+        const info = patched.get(shell);
+        if (!info) continue;
+        try {
+          shell.submit = info.origSubmit;
+        } catch {
+        }
+        if (info.origActionsSubmit && shell.actions) {
+          try {
+            shell.actions.submit = info.origActionsSubmit;
+          } catch {
+          }
+        }
+      }
+      patchedShells.length = 0;
+    };
+  }, [mustBlockSubmit]);
+  useEffect(() => {
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      try {
+        if (!isRedteamModeActive()) return;
+      } catch {
+        return;
+      }
+      refresh();
+    };
+    tick();
+    const iv = typeof window !== "undefined" && window.setInterval ? window.setInterval(tick, 5e3) : null;
+    return () => {
+      alive = false;
+      if (iv && typeof window !== "undefined" && window.clearInterval)
+        window.clearInterval(iv);
+    };
+  }, [refresh]);
+  useEffect(() => {
+    if (typeof document === "undefined" || !document.addEventListener)
+      return void 0;
+    const onPointer = (e) => {
+      if (!looksLikeSendControl(e.target)) return;
+      if (!mustBlockSubmit()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function")
+        e.stopImmediatePropagation();
+    };
+    const onKey = (e) => {
+      if (e.key !== "Enter" || e.shiftKey || e.isComposing) return;
+      const target = e.target;
+      const inComposer = target && target.closest && target.closest(
+        "[data-composer-card], [data-composer-seat], [contenteditable='true'], textarea"
+      );
+      if (!inComposer) return;
+      if (target.closest && target.closest(".dshp-dock, .dshp-auth-mask, .rt-dock, .dshp-env-gate"))
+        return;
+      if (!mustBlockSubmit()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function")
+        e.stopImmediatePropagation();
+    };
+    document.addEventListener("pointerdown", onPointer, true);
+    document.addEventListener("click", onPointer, true);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer, true);
+      document.removeEventListener("click", onPointer, true);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [mustBlockSubmit]);
+  if (!open) return null;
+  const message = status && status.message || t("envGate.lead");
+  return h(
+    "div",
+    {
+      className: "dshp-auth-mask dshp-env-gate",
+      role: "dialog",
+      "aria-modal": "true"
+    },
+    h(
+      "div",
+      { className: "dshp-auth-modal", style: { width: "min(480px,100%)" } },
+      h("h2", null, t("envGate.title")),
+      h("div", { style: { fontSize: 13, lineHeight: 1.55 } }, message),
+      h(
+        "div",
+        {
+          style: {
+            fontSize: 12,
+            color: "var(--dsw-alias-label-secondary,#999)",
+            lineHeight: 1.5
+          }
+        },
+        t("envGate.kaliHint")
+      ),
+      confirmSkip ? h("div", { className: "dshp-auth-warn" }, t("envGate.skipConfirm")) : null,
+      h(
+        "div",
+        { className: "dshp-auth-ops" },
+        confirmSkip ? [
+          h(
+            "button",
+            {
+              key: "no",
+              type: "button",
+              onClick: () => setConfirmSkip(false)
+            },
+            t("envGate.skipNo")
+          ),
+          h(
+            "button",
+            {
+              key: "yes",
+              type: "button",
+              className: "primary",
+              disabled: busy,
+              onClick: () => {
+                setBusy(true);
+                fetch("/redteam/api", {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({
+                    op: "platformEnvAdaptSkip",
+                    skip: true
+                  })
+                }).then((r) => r.json()).then((r) => {
+                  setBusy(false);
+                  cacheRef.current = {
+                    at: Date.now(),
+                    ready: true,
+                    skipped: true
+                  };
+                  setStatus(r);
+                  setOpen(false);
+                  setConfirmSkip(false);
+                }).catch(() => {
+                  setBusy(false);
+                  cacheRef.current = {
+                    at: Date.now(),
+                    ready: true,
+                    skipped: true
+                  };
+                  setOpen(false);
+                });
+              }
+            },
+            t("envGate.skipYes")
+          )
+        ] : [
+          h(
+            "button",
+            {
+              key: "skip",
+              type: "button",
+              onClick: () => setConfirmSkip(true)
+            },
+            t("envGate.skip")
+          ),
+          h(
+            "button",
+            {
+              key: "go",
+              type: "button",
+              className: "primary",
+              onClick: () => {
+                setOpen(false);
+                requestDrillEnv();
+              }
+            },
+            t("envGate.go")
+          )
+        ]
+      )
+    )
+  );
+}
+
 // src/entry.js
 var name = true ? "dsh-purge-community" : "dsh-purge-panel";
 var inject = ["slots", "locale"];
@@ -12509,15 +13889,25 @@ function PanelOverlays() {
     import_react.default.Fragment,
     null,
     h("style", null, base_default),
+    // Restored from 1.1.71 apply(): shell.overlay carried the welcome notice
+    // and the red-team environment gate next to the dock.
+    h(WelcomeNotice, {
+      repo: true ? "https://github.com/kingcharleslzy-ai/dsh-purge" : void 0
+    }),
+    h(EnvAdaptSendGate),
     st.authOpen ? h(AuthGate, { pending: st.pending }) : null
   );
 }
 function apply(ctx) {
   ctx.effect(() => installLegacyVisibility(), "panel legacy visibility");
-  ctx.inject(["sessions", "uiWorkspace"], (host2) => {
-    host2.effect(() => bindSessionContext(host2), "panel session context");
+  ctx.inject(["sessions", "uiWorkspace"], (host3) => {
+    host3.effect(() => bindSessionContext(host3), "panel session context");
   });
   ctx.effect(startGrantSync, "panel grant sync");
+  ctx.inject(
+    ["sessions", "uiWorkspace", "conversation"],
+    (host3) => installRewindUi(host3)
+  );
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), "panel locale");
   const t = ctx.locale.bind(NS);
   setTranslate(t);
@@ -12532,10 +13922,10 @@ function apply(ctx) {
       PanelOverlays
     )
   );
-  ctx.inject(["sidebarRightTabs", "sidebarRight"], (host2) => {
-    setNativeSidebar(host2.sidebarRight);
-    host2.effect(
-      () => host2.sidebarRightTabs.register({
+  ctx.inject(["sidebarRightTabs", "sidebarRight"], (host3) => {
+    setNativeSidebar(host3.sidebarRight);
+    host3.effect(
+      () => host3.sidebarRightTabs.register({
         id: "dsh-purge",
         kind: "dsh-purge",
         title: () => true ? "Purge Community" : "Purge",
@@ -12552,9 +13942,9 @@ function apply(ctx) {
       }),
       "purge panel tab"
     );
-    host2.slots.inject(
+    host3.slots.inject(
       "sidebar.right.pane.tab",
-      () => host2.slots.register(
+      () => host3.slots.register(
         {
           name: "sidebar.right.pane.tab",
           key: "dsh-purge",
@@ -12563,8 +13953,8 @@ function apply(ctx) {
         SettingsRoot
       )
     );
-    host2.effect(() => () => {
-      clearNativeSidebar(host2.sidebarRight);
+    host3.effect(() => () => {
+      clearNativeSidebar(host3.sidebarRight);
     });
   });
   ctx.slots.inject(

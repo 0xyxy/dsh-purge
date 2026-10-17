@@ -2,95 +2,169 @@
 
 # Purge Community
 
-**让 DSH 插件更容易维护，也更容易恢复。**
+**给 DeepSeek Harness 拆闸的插件。**
 
-DeepSeek Harness 的提示词、规则与技能管理 · 原生右侧面板 · 版本检测 · 本机备份与插件回滚
+83 条宿主补丁 · 27 层破甲自检 · 提示词/规则/技能管理 · 原生右侧面板 · 备份与回滚
 
 [![Release](https://img.shields.io/github/v/release/kingcharleslzy-ai/dsh-purge?label=Community)](https://github.com/kingcharleslzy-ai/dsh-purge/releases)
-[![Checks](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml/badge.svg)](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml)
-[发行与下载](https://github.com/kingcharleslzy-ai/dsh-purge/releases) · [安装与迁移](#安装与迁移) · [兼容范围](#兼容范围) · [反馈问题](https://github.com/kingcharleslzy-ai/dsh-purge/issues) · [English](docs/README.en.md)
+[发行与下载](https://github.com/kingcharleslzy-ai/dsh-purge/releases) · [安装](#安装) · [破甲自检](#破甲自检) · [补丁清单](#补丁清单) · [English](docs/README.en.md)
 
 </div>
 
-这是基于 [YuJunZhiXue/dsh-purge](https://github.com/YuJunZhiXue/dsh-purge) 的**独立社区维护分支**，不是上游官方版本，也不代表上游作者。保留原作者小杨的署名、许可证与来源；免费公开，不做付费销售。感谢原项目奠定的基础。
+这是 [YuJunZhiXue/dsh-purge](https://github.com/YuJunZhiXue/dsh-purge) 的社区维护分支（原作者 **小杨**，MIT）。上游已停止更新、且原版补丁表对新版 DSH 失效；本分支把全部能力移植到 **DSH 0.2.1-rc.1**，并把"补丁到底有没有生效"变成可复算的检查。
 
-## 这版解决什么
+## 它解决什么
 
-- **一个包，一个入口。** 后端和原生设置面板整合为 `dsh-purge-community`，从 DSH 右侧进入；没有会话上方按钮或悬浮按钮。旧底部面板由生命周期内的隔离样式持续隐藏。
-- **设置接着用。** 内部配置 ID、接口和数据目录保持兼容，迁移不重写现有提示词、规则、技能和其他插件设置。
-- **更新来源清楚。** 只读取本仓库的正式 GitHub Releases；安装前校验 SHA256、包名称、版本和仓库身份。不开机静默升级，不按上游分支覆盖本地文件。
-- **先备份，再安装。** 升级和插件回滚前生成本机快照，写入互斥、完整性清单和 SHA256 校验。
-- **回滚插件，保留现在的内容。** 恢复插件代码及入口，不把你后来改过的提示词、规则或其他插件配置覆盖回旧值。
-- **修复新版对话报错。** `cwd` 没有注册时使用静态后缀，避免 `unknown prompt variable "{{cwd}}"`；已有变量和自定义后缀照常处理。见 [修复说明](docs/CWD-COMPAT.md)。
+模型不是不能干，是在**四道闸**前面被拦下来：模型自己的拒绝、审批弹窗、沙箱/权限拒绝、以及"你要不要确认一下"式的回合中断。这个插件把四道闸逐个拆掉：
 
-## 兼容范围
-
-| 环境 | 1.2.0 状态 |
+| 闸门 | 拆法 |
 | --- | --- |
-| macOS · DSH Desktop **0.2.1-rc.1** | 已验证的运行时目标；提示词渲染与社区维护接口 |
-| 其他 DSH 版本 / 组件版本不一致 | 不宣称兼容；停止主插件运行时注入，保留维护入口与数据 |
-| 上游旧版宿主文件补丁表 | **本版不允许写入或还原**；不会重新应用旧补丁 |
-| Windows / Web profile | 尚未完成本版端到端验收 |
+| **模型层** | 用户的 `prompt-inject.md` 每步作为最高优先级 section 注入；剥掉官方身份句；尾部追加破甲强化段（层级声明 / 拒绝即故障 / 抗谄媚 / 多轮重申） |
+| **审批层** | 审批门自动授信、`never` 提示句旁路、无 UI 通道时 fail-open、`run_code` / 工具 ask 放行、计划模式不硬拦 |
+| **沙箱层** | `confine()` 直通（不再包 bwrap）、fs 围栏禁用、观察策略放行、沙箱拒绝话术中性化 |
+| **回合层** | 重复工具守卫与结果修剪禁用、Auto Review 不否决、`ask_user_question` 最多等 1 秒就继续、UI 发消息永远新 turn |
 
-这是兼容维护版本，不是“全部旧补丁已适配新版”的承诺。已有磁盘补丁保持原状；社区版不会替你自动清理或重打。模型是否接受某个请求，不能由插件保证。
+## 能力总览
 
-## 安装与迁移
+**提示词**：注入正文编辑、分类排序、身份剥离、能力协议段、按预设适配（标准/极简/complete）、注入位置可切（`head` / `tail` / `both`）、尾部强化段（默认开）。
 
-需要 Node.js 22+、已初始化的 DSH Desktop，以及桌面版自带的 `dsh` CLI。先从 [Releases](https://github.com/kingcharleslzy-ai/dsh-purge/releases/latest) 下载 `dsh-purge-community-1.2.0.tgz` 和 `SHA256SUMS.txt`。
+**宿主补丁（83 条）**：提示词 25 · 代码 46 · 工具 9 · 兼容 3。每一条都能单独查状态；写入前自动建 profile 快照，逐文件留 `.dshpurge.bak`。
 
-**推荐：使用带备份的安装器，首次安装和旧版迁移都走同一路径。** macOS 示例，在下载目录运行：
+**面板**：右侧原生入口。状态（已应用/待应用/没对上/跳过、shim、备份）、**破甲自检**、逐条补丁组、提示词、规则集、技能目录、演练台（23 个红队技能）、备份/回滚、更新。
+
+**CLI**：原始 `dsh-purge` 与 `purge-community` 双入口，功能等价。
+
+**安全网**：每次应用/安装/回滚前生成快照，保留最近 5 份 + 每天 1 份 × 7 天 + 总量 200MB；回滚只恢复插件代码与入口，不动你后来改过的提示词/规则。
+
+## 破甲自检
+
+装完先跑这个，比"插件装上了"可靠：
+
+```sh
+purge-community selfcheck           # 人读
+purge-community selfcheck --json    # 机读
+```
+
+面板「状态 → 破甲自检」同源。它逐层回答"这条通道现在通不通"，当前 0.2.1-rc.1 上的实测：
+
+```
+DSH 0.2.1-rc.1 · qualified · 宿主补丁 75/83
+
+✓ 沙箱 confine 直通      ✓ 审批自动放行        ✓ 注入不被预设覆盖
+✓ 文件系统围栏禁用        ✓ 重复调用守卫禁用     ✓ 官方身份剥离
+✓ 观察策略放行           ✓ 工具结果修剪禁用     ✓ Web 面身份中性化
+✓ 拒绝话术中性化         ✓ Auto Review 不拦     ✓ 工具上限放宽(21/22/23)
+✓ 默认策略               ✓ 工具审批 fail-open   ✓ 子代理不设锁(24/37)
+✓ 重复守卫               ✓ 计划模式不硬拦       ✓ 回退不残留(56/58/75/77)
+✓ 外部内容不降级         ✓ 模型网关兼容         ✓ 会话与提示词挂载
+✓ 桌面宿主启动兜底       ✓ 运行时提示词注入     ✓ profile 权限选择
+✓ 宿主运行方式（asar 是否密封）
+```
+
+每层都标 `applied/required`；目标插件没装的层显示"当前不适用"，不会冒充成功。
+
+## 安装
+
+需要已初始化的 DSH Desktop（自带 Node 运行时）。从 [Releases](https://github.com/kingcharleslzy-ai/dsh-purge/releases/latest) 下载 `dsh-purge-community-1.3.1.tgz` 与 `SHA256SUMS.txt`：
 
 ```sh
 shasum -a 256 -c SHA256SUMS.txt
 mkdir purge-community-installer
-tar -xzf dsh-purge-community-1.2.0.tgz -C purge-community-installer
-PURGE_DSH_CLI="$(command -v dsh)" node \
-  purge-community-installer/package/bin/community.js migrate \
-  ./dsh-purge-community-1.2.0.tgz
+tar -xzf dsh-purge-community-1.3.1.tgz -C purge-community-installer
+
+APP="/Applications/DeepSeek Harness.app"
+ELECTRON_RUN_AS_NODE=1 "$APP/Contents/MacOS/DeepSeek Harness" \
+  "$PWD/purge-community-installer/package/bin/community.js" migrate \
+  "$PWD/dsh-purge-community-1.3.1.tgz"
 ```
 
-若 `dsh` 未在 PATH 中，`PURGE_DSH_CLI` 填桌面版实际 CLI 文件路径。安装器只管理当前 profile 的 Purge 包与入口，自动备份后将两个旧入口切换成一个社区入口；其他插件的启用状态保留。旧依赖保留在磁盘用于恢复，但不再作为启用的 bundle 加载。
+安装器会先备份，再把旧 Purge 入口合并成 `dsh-purge-community`，其他插件不动。装完**手动完全退出并重开 DSH**，然后：
 
-安装成功后，**手动完全退出并重新打开 DSH**，在右侧面板选择 **Purge Community**。不要在运行任务时自动重启应用。更新包包含构建好的界面，无需另装 `dsh-purge-panel`。
+1. 右侧 **Purge Community → 状态**，看「兼容与诊断」应为 `qualified`；
+2. 点 **应用**（官方桌面版会先解开 `app.asar`，写入前自动建快照）；
+3. 按提示**再退出重开一次**，让解包后的宿主生效；
+4. 回来跑一次 `selfcheck`，确认各层在位。
 
-> 如果直接执行普通 `dsh plugin add`，不会经过本项目的迁移备份和旧入口切换流程。已有 Purge 的用户请使用上面的安装器。
+> 不要用 `dsh plugin add` 裸装：那会跳过迁移备份与入口切换。
 
-## 日常使用
+## 日常命令
 
-| 位置 | 用途 |
+```sh
+purge-community status              # 宿主/补丁总览
+purge-community selfcheck           # 破甲自检
+purge-community diagnose            # 漂移诊断（哪条锚点没命中 + 可能的新落点）
+purge-community boost on|off        # 尾部强化段（默认 on）
+purge-community usage               # 备份占用
+purge-community prune               # 立即清理旧备份
+purge-community apply|revert|uninstall|edit   # 原版能力，直接转发
+```
+
+注入位置与强化段存在 `$DSH_HOME/dsh-purge/tuning.json`，面板里也能改，改完重启生效：
+
+```json
+{ "boost": true, "injectPosition": "head", "askNoBlock": true }
+```
+
+`injectPosition` 取 `head`（省 token、缓存友好）、`tail`（贴输出，多轮衰减最小）、`both`（两头都钉）。
+
+## 补丁清单
+
+<details>
+<summary><b>83 条，按层分组（点开）</b></summary>
+
+**提示词（25）**：身份/人设剥离、Web 面身份中性化与"别另起服务器"移除、审批与沙箱拒绝话术、交付物禁令、跨会话引用框架、`complete` 预设保留注入、每步重贴 system、极简/梁神预设适配、身份卡与目标段。
+
+**代码（46）**：沙箱 `confine` 直通、fs 围栏、观察策略、审批自动授信与 escalation 无条件、`developer` role 回退、stream 连接、`rewind` 全链路（只藏被撤的那轮 / 不进模型请求 / append 即替换 / todo 回收）、会话 followup 去竞态、挂载去重、桌面壳兜底（缺 `DSH_PROFILE`、信号杀不弹崩溃框、官方更新交棒）、settings legacy API、subagent 深度 3→10、read 上限、bash 等待恢复、session log 默认不上传。
+
+**工具（9）**：bash/pwsh 删除移动谨慎语、`run_code` 审批话术、fs escalation schema、web untrusted 框架、子代理 scope 锁、`ask_user_question` 不再卡回合（#89）、minimal 工具表恢复。
+
+**兼容（3）**：0.1.5 `complete` 注入、0.2.0 Anthropic OAuth 身份、persona 字段别名。
+
+</details>
+
+每条的状态、目标文件、期望原文都能在面板逐条展开；`diagnose` 会给出漂移项的**可能新落点**（行号 + 片段），方便手动或后续自动重锚。
+
+## 兼容性
+
+| 环境 | 状态 |
 | --- | --- |
-| 状态 → 版本与恢复 | 查看插件/宿主版本、兼容结论，手动检查并安装本 fork 的发行包 |
-| 状态 → 本机备份 | 立即备份、选择快照、回滚插件；完成后手动重启 |
-| 提示词 | 查看、编辑并保存现有提示词；未点保存不会自动落盘 |
-| 规则 | 沿用原规则集与工作区策略 |
-| 技能 | 管理 DSH 官方技能目录，保留原有技能文件 |
+| macOS · DSH Desktop **0.2.1-rc.1** | 已回归：83 条锚点、面板、CLI、自检 27 层全绿 |
+| macOS · 其他 DSH 版本 | 允许应用，标"未验证"；先跑 `selfcheck` / `diagnose` |
+| 宿主组件版本不一致 | 只报告，不阻止写入 |
+| Windows / Web profile | 代码路径保留，本版未做端到端验收 |
 
-备份位于 `$DSH_HOME/dsh-purge-community/backups/`，默认 `$DSH_HOME` 为 `~/.dsh`，使用私有目录权限。快照含 Purge 包、profile 配置/清单/锁文件、Purge 状态、提示词和规则；**不额外扫描独立凭证文件、会话、图库或模型**。profile 配置本身可能含密钥等私人信息，请勿将备份上传到公开 issue。
+DSH 升级后：`app.asar` 会重新出现、面板显示"asar 仍密封"，点一次**应用**再退出重开即可；补丁表若有漂移，`diagnose` 会指出来。
 
-“回滚插件”不会自动还原快照内的用户配置。需要取回旧提示词或规则时，可从快照 `settings/` 中按文件人工恢复；这样避免一次回滚误伤后来新增的内容。详见 [维护与恢复](docs/MAINTENANCE.md)。
+## 回滚
+
+```sh
+# 应用打不开（最坏情况）
+R="/Applications/DeepSeek Harness.app/Contents/Resources"
+mv "$R/app.asar.bak" "$R/app.asar"
+
+# 只回滚宿主补丁
+purge-community revert
+
+# 回滚插件（保留当前提示词/规则）
+purge-community rollback <backup-id>
+```
 
 ## 开发与验证
 
 ```sh
 npm --prefix packages/purge-panel ci --ignore-scripts --legacy-peer-deps
-npm run build:client
-npm test
+npm run build:client      # 从 packages/purge-panel/src 生成根 client.js
+npm test                  # 25 项：补丁锚点 / 自检 / boost / 备份与安装
 npm run test:ui
 npm --prefix packages/purge-panel test
 npm run check:client
-npm pack --ignore-scripts
+npm run diagnose
 ```
 
-真实宿主渲染回归另需指定 DSH 自带模块路径：
+`test/patch-anchors.test.mjs` 把 0.2.1 的真实源码片段钉进用例：谁改了锚点而没同步用例，测试直接失败。
 
-```sh
-node test/cwd-compat.mjs /absolute/path/to/dsh-system-prompt/lib/index.js
-```
+## 来源与边界
 
-源代码在 `lib/`，界面源代码在 `packages/purge-panel/src/`；根目录 `client.js` 是生成文件。`packages/purge-panel` 保留为界面源码/回归测试工程，不再需要作为单独插件安装。
+原项目 [YuJunZhiXue/dsh-purge](https://github.com/YuJunZhiXue/dsh-purge)，作者 **小杨**；本分支保留 Git 历史与 MIT [LICENSE](LICENSE)，第三方来源见 [NOTICE](NOTICE.md)。社区版的包名、发布与更新源由本仓库独立管理。
 
-## 来源与维护边界
-
-原项目：[YuJunZhiXue/dsh-purge](https://github.com/YuJunZhiXue/dsh-purge)，原作者 **小杨**。本分支保留 Git 历史和 MIT [LICENSE](LICENSE)，第三方来源见 [NOTICE](NOTICE.md)。上游原说明保存在 [docs/upstream](docs/upstream/README.zh-CN.md)。
-
-社区版的名称、安装包、发布与更新源由本仓库独立管理。问题请提交到[本仓库 Issues](https://github.com/kingcharleslzy-ai/dsh-purge/issues)，附 DSH/插件版本、复现步骤和去掉敏感内容的日志；不需要提交个人提示词或完整备份。
+插件负责**拆掉 harness 与宿主默认策略的闸**，不负责替模型判断某件事该不该做；模型最终输出仍取决于模型本身。上游通道仅作历史保留，默认不选。

@@ -196,10 +196,13 @@ if (process.env.PANEL_CLIENT) {
   assert.equal(rewindSeat.spec.id, "dsh-purge-rewind");
   assert.equal(rewindSeat.spec.order, 20);
 }
-assert.equal(definitions.length, 1);
-assert.equal(definitions[0].kind, "dsh-purge");
-assert.equal(definitions[0].keepMounted, true);
-const body = seats.find((x) => x.spec.name === "sidebar.right.pane.tab").body;
+const railSeat = seats.find((x) => x.spec.name === "sidebar.panellist");
+assert(railSeat, "left rail entry is registered");
+assert.equal(railSeat.spec.id, "dsh-purge");
+const pageSeat = seats.find((x) => x.spec.name === "main");
+assert(pageSeat, "full page is registered on the main slot");
+assert.equal(pageSeat.spec.key, "dsh-purge");
+const body = pageSeat.body;
 
 responses["/dsh-purge/community"] = {
   version: "1.2.0",
@@ -227,9 +230,8 @@ win.confirm = () => true;
     button = (text) =>
       root.findAllByType("button").find((x) => x.children.join("") === text);
   assert(
-    root
-      .findAllByType("h2")
-      .some((x) => x.children.join("") === "Purge Community"),
+    root.findAllByType("h1").some((x) => x.children.join("") === "Purge"),
+    "page title renders",
   );
   assert(root.findAllByProps({ "aria-label": "社区版维护" }).length);
   assert(

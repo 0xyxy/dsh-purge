@@ -1,15 +1,11 @@
 // UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h, react } from "./shared/react.js";
 import { PURGE_CSS } from "./styles/index.js";
-import {
-  useDock,
-  startGrantSync,
-  setNativeSidebar,
-  clearNativeSidebar,
-} from "./state/dock.js";
+import { useDock, startGrantSync } from "./state/dock.js";
 import { AuthGate } from "./components/auth.js";
 import { NS, setTranslate, zh, en } from "./shared/locale.js";
 import { SettingsRoot } from "./components/settings-shell.js";
+import { PurgePage, PurgeGlyph } from "./components/page.js";
 import { bindSessionContext } from "./state/session-context.js";
 import { installLegacyVisibility } from "./state/legacy-visibility.js";
 import { installRewindUi } from "./components/rewind.js";
@@ -36,6 +32,10 @@ export function PurgeIcon({ size = 20 } = {}) {
     h("circle", { cx: 9, cy: 7, r: 3, fill: "none" }),
     h("circle", { cx: 15, cy: 17, r: 3, fill: "none" }),
   );
+}
+
+function PurgeGlyphIcon({ size = 16 } = {}) {
+  return h(PurgeGlyph, { size });
 }
 
 export function PanelOverlays() {
@@ -79,44 +79,29 @@ export function apply(ctx) {
       PanelOverlays,
     ),
   );
-  ctx.inject(["sidebarRightTabs", "sidebarRight"], (host) => {
-    setNativeSidebar(host.sidebarRight);
-    host.effect(
-      () =>
-        host.sidebarRightTabs.register({
-          id: "dsh-purge",
-          kind: "dsh-purge",
-          title: () => (__COMMUNITY__ ? "Purge Community" : "Purge"),
-          keepMounted: true,
-          guide: [
-            {
-              id: "dsh-purge",
-              order: 60,
-              title: () => (__COMMUNITY__ ? "Purge Community" : "Purge"),
-              description: () =>
-                __COMMUNITY__
-                  ? "社区维护 · 兼容检测、备份与回滚"
-                  : "独立界面 · 官方插件可单独更新",
-              icon: PurgeIcon,
-            },
-          ],
-        }),
-      "purge panel tab",
-    );
-    host.slots.inject("sidebar.right.pane.tab", () =>
-      host.slots.register(
-        {
-          name: "sidebar.right.pane.tab",
-          key: "dsh-purge",
-          inject: () => ({ t }),
-        },
-        SettingsRoot,
-      ),
-    );
-    host.effect(() => () => {
-      clearNativeSidebar(host.sidebarRight);
-    });
-  });
+  // 左侧栏入口：图标 + 整页。右侧抽屉不再注册，避免两处重复。
+  ctx.slots.inject("sidebar.panellist", () =>
+    ctx.slots.register(
+      {
+        name: "sidebar.panellist",
+        id: "dsh-purge",
+        order: 30,
+        label: __COMMUNITY__ ? "Purge" : "Purge",
+        inject: () => ({ t }),
+      },
+      PurgeGlyphIcon,
+    ),
+  );
+  ctx.slots.inject("main", () =>
+    ctx.slots.register(
+      {
+        name: "main",
+        key: "dsh-purge",
+        inject: () => ({ t }),
+      },
+      PurgePage,
+    ),
+  );
   ctx.slots.inject("plugins.bundle.config", () =>
     ctx.slots.register(
       {

@@ -4,7 +4,7 @@
 
 **给 DeepSeek Harness 拆闸的插件。**
 
-83 条宿主补丁 · 27 层破甲自检 · 提示词/规则/技能管理 · 原生右侧面板 · 备份与回滚
+83 条宿主补丁 · 27 层破甲自检 · 提示词/规则/技能管理 · 左侧栏整页设置 · 备份与回滚
 
 [![Release](https://img.shields.io/github/v/release/kingcharleslzy-ai/dsh-purge?label=Community)](https://github.com/kingcharleslzy-ai/dsh-purge/releases)
 [发行与下载](https://github.com/kingcharleslzy-ai/dsh-purge/releases) · [安装](#安装) · [破甲自检](#破甲自检) · [补丁清单](#补丁清单) · [English](docs/README.en.md)
@@ -30,7 +30,7 @@
 
 **宿主补丁（83 条）**：提示词 25 · 代码 46 · 工具 9 · 兼容 3。每一条都能单独查状态；写入前自动建 profile 快照，逐文件留 `.dshpurge.bak`。
 
-**面板**：右侧原生入口。状态（已应用/待应用/没对上/跳过、shim、备份）、**破甲自检**、逐条补丁组、提示词、规则集、技能目录、演练台（23 个红队技能）、备份/回滚、更新。
+**面板**：**左侧栏 `Purge` 入口**，打开就是整页设置（页签：状态 / 提示词 / 规则 / 技能 / 演练台 / 更多），排版跟 DSH 原生设置一致，名词解释放在标题后的 `?` 里。状态页含兼容级别、补丁计数、**破甲自检**、逐条补丁组、**破甲强化段**开关、备份与更新。
 
 **CLI**：原始 `dsh-purge` 与 `purge-community` 双入口，功能等价。
 

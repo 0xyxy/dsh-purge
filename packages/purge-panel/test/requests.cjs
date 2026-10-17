@@ -157,10 +157,13 @@ if (process.env.PANEL_CLIENT) {
   assert.equal(rewindSeat.spec.id, "dsh-purge-rewind");
   assert.equal(rewindSeat.spec.order, 20);
 }
-assert.equal(definitions.length, 1);
-assert.equal(definitions[0].kind, "dsh-purge");
-assert.equal(definitions[0].keepMounted, true);
-const body = seats.find((x) => x.spec.name === "sidebar.right.pane.tab").body;
+const railSeat = seats.find((x) => x.spec.name === "sidebar.panellist");
+assert(railSeat, "left rail entry is registered");
+assert.equal(railSeat.spec.id, "dsh-purge");
+const pageSeat = seats.find((x) => x.spec.name === "main");
+assert(pageSeat, "full page is registered on the main slot");
+assert.equal(pageSeat.spec.key, "dsh-purge");
+const body = pageSeat.body;
 
 (async () => {
   let tree, resolveGet;

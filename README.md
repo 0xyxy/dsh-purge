@@ -128,12 +128,12 @@ purge-community apply|revert|uninstall|edit   # 原版能力，直接转发
 
 | 环境 | 状态 |
 | --- | --- |
-| macOS · DSH Desktop **0.2.1-rc.1** | 已回归：83 条锚点、面板、CLI、自检 27 层全绿 |
+| macOS · DSH Desktop **0.2.1-rc.1 / rc.2** | 已回归：83 条锚点、面板、CLI、自检 27 层全绿（rc.2 上 0 漂移） |
 | macOS · 其他 DSH 版本 | 允许应用，标"未验证"；先跑 `selfcheck` / `diagnose` |
 | 宿主组件版本不一致 | 只报告，不阻止写入 |
 | Windows / Web profile | 代码路径保留，本版未做端到端验收 |
 
-DSH 升级后：`app.asar` 会重新出现、面板显示"asar 仍密封"，点一次**应用**再退出重开即可；补丁表若有漂移，`diagnose` 会指出来。
+DSH 升级后：`app.asar` 会重新出现、面板顶部直接提示"宿主仍封在 app.asar 里"，点一次**应用**再退出重开即可；补丁表若有漂移，`diagnose` 会指出来。rc.2 已实测 0 漂移。
 
 ## 回滚
 

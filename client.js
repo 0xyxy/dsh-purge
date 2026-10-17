@@ -12633,7 +12633,7 @@ function SettingsRoot(props = {}) {
       h(
         "span",
         { className: "dshpp-native-badge" },
-        (true ? "\u793E\u533A\u7248 " : "\u72EC\u7ACB\u754C\u9762 ") + "1.3.3"
+        (true ? "\u793E\u533A\u7248 " : "\u72EC\u7ACB\u754C\u9762 ") + "1.3.4"
       )
     ),
     h(CompatibilityNote, { status: backendStatus }),
@@ -12788,8 +12788,16 @@ function StatusStrip({ info }) {
       "span",
       { className: "dshpp-strip-item" },
       "\u63D2\u4EF6 ",
-      h("b", null, info?.plugin_version || "1.3.3")
+      h("b", null, info?.plugin_version || "1.3.4")
     )
+  );
+}
+function LayoutNotice({ info }) {
+  if (!info || !info.asar_still_sealed) return null;
+  return h(
+    "p",
+    { className: "dshpp-warn", role: "status" },
+    "DSH \u5BBF\u4E3B\u4ECD\u5C01\u5728 app.asar \u91CC\uFF08\u901A\u5E38\u662F\u521A\u66F4\u65B0\u8FC7\uFF09\uFF1A\u5F53\u524D\u8DD1\u7684\u5BBF\u4E3B\u6CA1\u6709\u8865\u4E01\u3002\u70B9\u4E0B\u9762\u7684\u300C\u5E94\u7528\u300D\u4F1A\u89E3\u5F00 app.asar \u5E76\u5199\u5165\u8865\u4E01\uFF0C\u7136\u540E\u624B\u52A8\u9000\u51FA\u91CD\u5F00\u4E00\u6B21\u5373\u53EF\u3002"
   );
 }
 function VersionNotice({ info }) {
@@ -12801,11 +12809,11 @@ function VersionNotice({ info }) {
     );
   }
   const backend = info?.plugin_version;
-  if (!backend || backend === "1.3.3") return null;
+  if (!backend || backend === "1.3.4") return null;
   return h(
     "p",
     { className: "dshpp-warn", role: "status" },
-    `\u5B98\u65B9\u7248\u672C ${backend}\uFF1B\u754C\u9762 ${"1.3.3"}\u3002\u4E24\u8005\u4E0D\u4E00\u81F4\u65F6\u8BBE\u7F6E\u53EF\u80FD\u4E0D\u751F\u6548\uFF0C\u8BF7\u66F4\u65B0\u5230\u540C\u4E00\u7248\u672C\u540E\u91CD\u542F DSH\u3002`
+    `\u5B98\u65B9\u7248\u672C ${backend}\uFF1B\u754C\u9762 ${"1.3.4"}\u3002\u4E24\u8005\u4E0D\u4E00\u81F4\u65F6\u8BBE\u7F6E\u53EF\u80FD\u4E0D\u751F\u6548\uFF0C\u8BF7\u66F4\u65B0\u5230\u540C\u4E00\u7248\u672C\u540E\u91CD\u542F DSH\u3002`
   );
 }
 function PurgePage() {
@@ -12849,13 +12857,14 @@ function PurgePage() {
           true ? h(
             "span",
             { className: "dshpp-page-ver" },
-            "\u793E\u533A\u7248 1.3.3"
+            "\u793E\u533A\u7248 1.3.4"
           ) : null
         )
       )
     ),
     h(StatusStrip, { info }),
     h(VersionNotice, { info }),
+    h(LayoutNotice, { info }),
     h(
       "nav",
       { className: "dshpp-page-tabs", role: "tablist" },

@@ -12759,6 +12759,14 @@ function StatusStrip({ info }) {
     )
   );
 }
+function LayoutNotice({ info }) {
+  if (!info || !info.asar_still_sealed) return null;
+  return h(
+    "p",
+    { className: "dshpp-warn", role: "status" },
+    "DSH \u5BBF\u4E3B\u4ECD\u5C01\u5728 app.asar \u91CC\uFF08\u901A\u5E38\u662F\u521A\u66F4\u65B0\u8FC7\uFF09\uFF1A\u5F53\u524D\u8DD1\u7684\u5BBF\u4E3B\u6CA1\u6709\u8865\u4E01\u3002\u70B9\u4E0B\u9762\u7684\u300C\u5E94\u7528\u300D\u4F1A\u89E3\u5F00 app.asar \u5E76\u5199\u5165\u8865\u4E01\uFF0C\u7136\u540E\u624B\u52A8\u9000\u51FA\u91CD\u5F00\u4E00\u6B21\u5373\u53EF\u3002"
+  );
+}
 function VersionNotice({ info }) {
   if (info && info.ok === false) {
     return h(
@@ -12823,6 +12831,7 @@ function PurgePage() {
     ),
     h(StatusStrip, { info }),
     h(VersionNotice, { info }),
+    h(LayoutNotice, { info }),
     h(
       "nav",
       { className: "dshpp-page-tabs", role: "tablist" },

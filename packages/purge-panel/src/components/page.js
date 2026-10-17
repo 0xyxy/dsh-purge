@@ -103,6 +103,16 @@ function StatusStrip({ info }) {
   );
 }
 
+/** 宿主被密封在 app.asar 里（通常是刚更新过）时，说明补丁当前没有生效。 */
+function LayoutNotice({ info }) {
+  if (!info || !info.asar_still_sealed) return null;
+  return h(
+    "p",
+    { className: "dshpp-warn", role: "status" },
+    "DSH 宿主仍封在 app.asar 里（通常是刚更新过）：当前跑的宿主没有补丁。点下面的「应用」会解开 app.asar 并写入补丁，然后手动退出重开一次即可。",
+  );
+}
+
 /** 界面与后端不是同一份包时，必须显眼提示——否则用户会以为设置没生效。 */
 function VersionNotice({ info }) {
   if (info && info.ok === false) {
@@ -174,6 +184,7 @@ export function PurgePage() {
     ),
     h(StatusStrip, { info }),
     h(VersionNotice, { info }),
+    h(LayoutNotice, { info }),
     h(
       "nav",
       { className: "dshpp-page-tabs", role: "tablist" },

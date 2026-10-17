@@ -60,6 +60,10 @@
     - id: dsh-purge-redteam
       name: dsh-purge-community/redteam
 
+    # 自带 agent 预设：unrestricted（无限制模式）
+    - id: dsh-purge-presets
+      name: dsh-purge-community/presets-plugin
+
     # 演练台事实库（SQLite），数据在 $DSH_HOME/redteam
     - id: dsh-purge-redteam-store
       name: dsh-purge-community/redteam/store

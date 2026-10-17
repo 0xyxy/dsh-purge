@@ -1,6 +1,8 @@
-# 1.3.8
+# 1.3.9
 
-> 1.3.8 = 安装器的自检摘要改用文本模式（1.3.7 打到的是 JSON 片段）。
+> 1.3.9 = 无限制模式预设真正出现在下拉里（注册到 agentPresets，而不是只落文件）。
+
+DSH 0.1.7+ 的模式下拉只认 `agentPresets.register()`，把文件夹放进 `~/.dsh/.agent-presets/` 不会显示（1.3.7/1.3.8 的骨架就卡在这一步）。新增 `lib/presets-plugin.js` 作为独立插件条目 `dsh-purge-community/presets-plugin`：等 registry 就绪后软注册一次，卸载时释放；首次运行会把 `presets/unrestricted` 落到用户目录。
 
 `purge-community selfcheck --text` 只输出人读摘要；`scripts/install.sh` 用它打印「DSH 版本 · 兼容级别 · 宿主补丁」和结论。之前的实现取到了 JSON 的第二行，等于没打出有用信息。
 

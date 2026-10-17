@@ -7,6 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { installPreset, presetStatus, bundledPresetDir } from "../lib/presets.js";
+import { readPresetDefinition } from "../lib/redteam/preset-composition.js";
 import { ALL_PATCHES, applyReplacementsToText } from "../lib/core.js";
 
 const template = () => fs.readFileSync(path.join(bundledPresetDir(), "agent.cordis.yml"), "utf8");
@@ -48,4 +49,16 @@ test("install is idempotent and never overwrites user edits without force", () =
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }
+});
+
+test("the bundled preset parses into a registry definition", () => {
+  const def = readPresetDefinition("unrestricted", bundledPresetDir());
+  assert.equal(def.id, "unrestricted");
+  assert.equal(def.name, "无限制模式");
+  assert.equal(def.order, 20);
+  assert(Array.isArray(def.plugins), "plugins rows");
+  assert(def.plugins.length >= 12, `expected a full composition, got ${def.plugins.length}`);
+  const ids = def.plugins.map((row) => row && row.id).filter(Boolean);
+  assert(ids.includes("persona"), "persona row kept");
+  assert(!ids.includes("redteam-tools"), "red team rows stripped");
 });

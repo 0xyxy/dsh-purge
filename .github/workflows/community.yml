@@ -17,6 +17,7 @@ jobs:
           cache: npm
           cache-dependency-path: packages/purge-panel/package-lock.json
       - run: npm --prefix packages/purge-panel ci --ignore-scripts --legacy-peer-deps
+      - run: npm run check:docs
       - run: npm test
       - run: npm run check:client
       - run: npm run test:ui

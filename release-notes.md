@@ -1,6 +1,10 @@
-# 1.3.6
+# 1.3.7
 
-> 1.3.6 = 状态页重排（应用置顶）+ 修深色模式按钮 + 一行安装脚本 + README 重写。
+> 1.3.7 = 文档版本自检进 CI + 安装器装完即自检 + 自带 `unrestricted` 预设骨架。
+
+- **`scripts/check-docs.mjs`**：断言 package.json 版本 = release-notes 首行 = README 版本行 = 英文 README，并检查一行安装命令还在；接进 `community.yml` 与 `release.yml`，版本改了文档没跟上会直接红。
+- **安装器装完自检**：`scripts/install.sh` 在安装成功后顺手跑一次 `selfcheck`，打印"DSH 版本 · 兼容级别 · 宿主补丁"和结论，不用再记第二条命令。
+- **`unrestricted` 预设骨架**：`presets/unrestricted/{preset.yml,agent.cordis.yml}` + `purge-community preset install`。预设只负责人设与工具面（审批/沙箱仍由宿主补丁拆），出厂 `fetch: false` 让 #24 有活干；`preset install` 幂等，不带 `--force` 不覆盖用户改动。
 
 状态页：把「应用 / 还原 / 卸载」固定在内容区顶部；破甲自检从 27 行竖排改成一行摘要 + 展开后的多列网格；补丁明细默认收起；备份/更新折进「维护」。深色模式下主按钮原来用 brand-primary 当底色（它是高亮文字色），会渲染成白底白字的方块，现在改成固定的实心绿/红配白字。
 

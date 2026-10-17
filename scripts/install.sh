@@ -70,6 +70,25 @@ ELECTRON_RUN_AS_NODE=1 "$CLI" "$INSTALLER" migrate "$TMP/$TGZ" || die "安装器
 
 say ""
 say "✓ 已安装 Purge Community $VERSION"
+
+# 顺手跑一次自检并把摘要打出来：装完就知道"能跑、补丁几层在位"，不用再记第二条命令。
+HOMEDIR="${DSH_HOME:-$HOME/.dsh}"
+SUMMARY=""
+for cli in "$HOMEDIR"/profiles/*/node_modules/dsh-purge-community/bin/community.js; do
+  [ -f "$cli" ] || continue
+  SUMMARY=$(DSH_HOME="$HOMEDIR" ELECTRON_RUN_AS_NODE=1 "$CLI" "$cli" selfcheck 2>/dev/null | sed -n '2p;$p' || true)
+  break
+done
+if [ -n "$SUMMARY" ]; then
+  say ""
+  say "自检摘要："
+  printf '%s\n' "$SUMMARY" | sed 's/^/  /'
+else
+  say "  （自检未运行：装好后到面板里点「应用」，或手动跑 purge-community selfcheck）"
+fi
+
+say ""
+say "接下来："
 say "  1) 完全退出并重开 DSH"
 say "  2) 左侧栏点 Purge → 状态页顶部点「应用」写入宿主补丁"
 say "  3) 再退出重开一次，然后跑：purge-community selfcheck"

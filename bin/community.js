@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { Maintenance, compatibility, ROOT, PACKAGE } from "../lib/community.js";
 import { findDshHome, findAiBase, patchDrift } from "../lib/core.js";
 import { selfCheck } from "../lib/selfcheck.js";
+import { installPreset, presetStatus } from "../lib/presets.js";
 import { readBoost, writeBoost } from "../lib/boost.js";
 const rawArgs = process.argv.slice(2);
 // 原版 CLI 的全部动作（apply/revert/uninstall/edit/status）原样保留，
@@ -35,7 +36,16 @@ if (LEGACY[op]) {
   process.exitCode = run.status === null ? 1 : run.status;
 } else try {
   let result;
-  if (op === "boost") {
+  if (op === "preset") {
+    const sub = argument || "status";
+    if (sub === "install" || sub === "update") {
+      result = installPreset({ force: rawArgs.includes("--force") });
+    } else if (sub === "status" || sub === "path") {
+      result = presetStatus(home);
+    } else {
+      throw Error("用法：purge-community preset [status|install [--force]]");
+    }
+  } else if (op === "boost") {
     if (argument === "on" || argument === "off") result = { enabled: writeBoost(argument === "on") };
     else result = { enabled: readBoost(), hint: "purge-community boost on|off" };
   } else if (op === "selfcheck" || op === "check-bypass") {
@@ -78,7 +88,7 @@ if (LEGACY[op]) {
     });
   } else
     throw Error(
-      "用法：purge-community status | diagnose | selfcheck [--json] | boost on|off | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
+      "用法：purge-community status | diagnose | selfcheck [--json] | boost on|off | preset [status|install] | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
     );
   console.log(JSON.stringify(result, null, 2));
 } catch (e) {

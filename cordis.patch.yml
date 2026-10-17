@@ -28,7 +28,8 @@
   config:
     includeHarnessIdentity: false
     personaPrefix: ""
-    personaSuffix: Your working directory is {{cwd}}.
+    # The runtime checks cwd availability; the config layer must not require it.
+    personaSuffix: ""
 
 - id: dsh-purge
   inject: [systemPrompt, tools]

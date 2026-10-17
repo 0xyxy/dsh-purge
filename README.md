@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/kingcharleslzy-ai/dsh-purge?label=release)](https://github.com/kingcharleslzy-ai/dsh-purge/releases)
 [![Checks](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml/badge.svg)](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml)
 
-当前版本 **1.5.1** · 适配 **DSH Desktop 0.2.1-rc.2**（rc.1 同样通过） · [English](docs/README.en.md)
+当前版本 **1.6.0** · 适配 **DSH Desktop 0.2.1-rc.2**（rc.1 同样通过） · [English](docs/README.en.md)
 
 </div>
 
@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/kingcharleslzy-ai/dsh-purge/master/
 <summary>不想用脚本？手动三步</summary>
 
 ```sh
-V=1.5.1
+V=1.6.0
 curl -fsSLO https://github.com/kingcharleslzy-ai/dsh-purge/releases/download/v$V/dsh-purge-community-$V.tgz
 curl -fsSLO https://github.com/kingcharleslzy-ai/dsh-purge/releases/download/v$V/SHA256SUMS.txt
 shasum -a 256 -c SHA256SUMS.txt && mkdir -p /tmp/pc && tar -xzf dsh-purge-community-$V.tgz -C /tmp/pc
@@ -40,7 +40,7 @@ ELECTRON_RUN_AS_NODE=1 "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSe
 
 ## 为什么用它，而不是原版
 
-| | 原版 1.1.71 | 本分支 1.5.1 |
+| | 原版 1.1.71 | 本分支 1.6.0 |
 | --- | --- | --- |
 | 宿主适配 | 只到 0.1.7 / 0.2.0，上游已停更 | **0.2.1-rc.2 逐条回归，0 漂移** |
 | 补丁 | 82 条，锚点随新版失效后静默跳过 | **83 条**（新增 `ask_user_question` 不阻塞），带**逐条状态与漂移诊断** |
@@ -48,6 +48,7 @@ ELECTRON_RUN_AS_NODE=1 "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSe
 | 面板 | 会话上方悬浮按钮 + 独立小窗 | **左侧栏整页**：顶部一句话状态 + 放大的「应用」，其余折叠；说明收进 `?` |
 | 更新 | 指向已停更的上游，分支/覆盖式安装 | 本仓库校验过的发行包（SHA256），保留通道/tag/pin 与多安装位置 |
 | 预设 | 无 | 自带「无限制模式」：**standard 超集**（工具面一样），只换执行优先人设 |
+| 审计 | 无 | **每次应用/回滚/开关都留痕**（`audit.jsonl`，面板「最近动作」可看） |
 | 维护 | 无备份 | 应用/安装/回滚前自动快照（5 份 + 每天 1 份 × 7 天 + 200MB 上限；**大文件内容寻址去重**，每份从 9MB 降到约 2MB） |
 | 提示词层 | 注入 + 身份剥离 | 再加**尾部破甲强化段**（默认开）、注入位置可切 `head/tail/both` |
 
@@ -95,6 +96,7 @@ purge-community reanchor apply <id> --lines A-B --yes   # 把新锚点钉成本�
 purge-community probe new           # 生成探针，验证注入真的到达模型
 purge-community boost on|off        # 尾部强化段（默认 on）
 purge-community preset install      # 装自带「无限制模式」预设
+purge-community audit --limit 20    # 最近动作记录（应用/回滚/开关/探针/重锚）
 purge-community usage | prune       # 备份占用 / 清理（含去重对象 GC）
 purge-community apply|revert|uninstall|edit   # 原版能力
 ```

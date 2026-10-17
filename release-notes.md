@@ -1,6 +1,10 @@
-# 1.5.1
+# 1.6.0
 
-> 1.5.1 = 半自动重锚（本地锚点覆盖，不改插件源码）。
+> 1.6.0 = 动作审计日志 + 发行包 smoke test（进 CI）+ 一轮全项目体检修复。
+
+- **审计日志**：`apply` / `revert` / `boost` / `probe` / `preset` / `reanchor` 每次动作写一条 JSONL（`audit.jsonl`，1MB 轮转保留 2 份）；`purge-community audit` 或面板「维护 → 最近动作」可读。apply 记录含快照 id、宿主版本、成功/已应用/失败计数与失败补丁号。
+- **发行包 smoke test**：`npm run smoke` 从 tgz 解包后验证——8 个导出目标存在、核心模块可导入、自带预设能解析成 20 行定义、`cordis.patch.yml` 条目完整、CLI 在空目录可运行、无宿主时 selfcheck 安全降级为 broken。已接进 community/release 两条 workflow。
+- **体检修复**：`anchors.js` 不再 import core（消除循环依赖）；重锚缓存改为显式变量；`--index` 缺值、`audit --limit` 非法值都有保护；过期探针文件自动清理；预设注册遇到「重复/非法」不再无效重试 40 次。
 
 宿主升级把锚点改坏时，`diagnose` 现在给的不只是行号：`reanchor apply <id> --lines A-B` 会把当前宿主里的真实片段取出来做候选（校验唯一性、先 dry-run 预览），加 `--yes` 后写成 `~/.dsh/dsh-purge/anchor-overrides.json` 里的本地覆盖；补丁引擎按索引套用，`reanchor clear <id>` 即可撤销。覆盖随宿主版本记录，换版本后一眼能看出哪些是本地钉的。
 

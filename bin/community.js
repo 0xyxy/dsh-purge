@@ -6,6 +6,7 @@ import { Maintenance, compatibility, ROOT, PACKAGE } from "../lib/community.js";
 import { findDshHome, findAiBase, patchDrift } from "../lib/core.js";
 import { selfCheck, resolveHost } from "../lib/selfcheck.js";
 import { readOverrides, writeOverride, clearOverride } from "../lib/anchors.js";
+import { logAudit, readAudit } from "../lib/audit.js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { installPreset, presetStatus } from "../lib/presets.js";
 import { readBoost, writeBoost } from "../lib/boost.js";
@@ -39,7 +40,10 @@ if (LEGACY[op]) {
   process.exitCode = run.status === null ? 1 : run.status;
 } else try {
   let result;
-  if (op === "reanchor") {
+  if (op === "audit") {
+    const n = rawArgs.includes("--limit") ? Number(rawArgs[rawArgs.indexOf("--limit") + 1]) : 20;
+    result = { ok: true, entries: readAudit({ limit: Number.isFinite(n) ? n : 20, home }) };
+  } else if (op === "reanchor") {
     const sub = argument || "list";
     const host = aiBase || resolveHost("");
     const drift = await patchDrift(host);
@@ -61,12 +65,17 @@ if (LEGACY[op]) {
       if (!row) throw Error(`没有漂移的补丁 #${argument2}`);
       result = row;
     } else if (sub === "clear") {
-      result = { cleared: true, overrides: clearOverride(home, argument2, rawArgs.includes("--index") ? Number(rawArgs[rawArgs.indexOf("--index") + 1]) : undefined) };
+      const idx = rawArgs.indexOf("--index");
+      const wanted = idx >= 0 ? Number(rawArgs[idx + 1]) : undefined;
+      if (idx >= 0 && !Number.isInteger(wanted)) throw Error("--index 需要整数");
+      result = { cleared: true, overrides: clearOverride(home, argument2, wanted) };
     } else if (sub === "apply") {
       const row = byId(argument2);
       if (!row) throw Error(`没有漂移的补丁 #${argument2}`);
       const idxFlag = rawArgs.indexOf("--index");
-      const target = idxFlag >= 0 ? row.anchors.find((a) => a.index === Number(rawArgs[idxFlag + 1])) : row.anchors[0];
+      const wanted = idxFlag >= 0 ? Number(rawArgs[idxFlag + 1]) : NaN;
+      if (idxFlag >= 0 && !Number.isInteger(wanted)) throw Error("--index 需要整数");
+      const target = idxFlag >= 0 ? row.anchors.find((a) => a.index === wanted) : row.anchors[0];
       if (!target) throw Error("找不到对应的锚点（用 --index 指定）");
       const text = readFileSync(target.file, "utf8").replace(/\r\n/g, "\n");
       const lines = text.split("\n");
@@ -106,6 +115,7 @@ if (LEGACY[op]) {
         result = { dryRun: true, ...preview, hint: "确认无误后加 --yes 写入本地重锚覆盖" };
       } else {
         writeOverride(home, row.id, target.index, candidate, { host: drift.host });
+        logAudit("reanchor", { patch: row.id, index: target.index, host: drift.host }, home);
         const core = await import("../lib/core.js");
         core.refreshAnchorOverrides();
         result = { written: true, ...preview, status: (await core.patchStatus(host))[row.id] };
@@ -116,6 +126,7 @@ if (LEGACY[op]) {
   } else if (op === "probe") {
     if (argument === "new" || argument === "create") {
       const probe = createProbe();
+      logAudit("probe", { nonce: probe.nonce }, home);
       result = { ok: true, ...probe };
     } else {
       const probe = readProbe();
@@ -125,6 +136,7 @@ if (LEGACY[op]) {
     const sub = argument || "status";
     if (sub === "install" || sub === "update") {
       result = installPreset({ force: rawArgs.includes("--force") });
+      logAudit("preset", { action: result.action, dir: result.dir }, home);
     } else if (sub === "status" || sub === "path") {
       result = presetStatus(home);
     } else {
@@ -187,7 +199,7 @@ if (LEGACY[op]) {
     });
   } else
     throw Error(
-      "用法：purge-community status | diagnose | selfcheck [--json] | boost on|off | probe [new] | preset [status|install] | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
+      "用法：purge-community status | diagnose | selfcheck [--json] | boost on|off | probe [new] | audit [--limit n] | preset [status|install] | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
     );
   console.log(JSON.stringify(result, null, 2));
 } catch (e) {

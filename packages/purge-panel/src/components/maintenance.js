@@ -248,6 +248,31 @@ export function CommunityMaintenance() {
       { className: "dshpp-row" },
       h(Btn, { disabled: busy, onClick: () => run("check") }, "检查社区版更新"),
       h(
+        Btn,
+        {
+          disabled: busy,
+          onClick: async () => {
+            try {
+              const r = await apiJson("/dsh-purge/audit?limit=10");
+              const lines = (r.entries || []).map(
+                (x) =>
+                  `${new Date(x.at).toLocaleString()}  ${x.event}  ${JSON.stringify(
+                    Object.fromEntries(
+                      Object.entries(x).filter(
+                        ([k]) => !["at", "event", "pid"].includes(k),
+                      ),
+                    ),
+                  )}`,
+              );
+              setNotice(lines.length ? lines.join("\n") : "还没有动作记录");
+            } catch (e) {
+              setNotice(e.message);
+            }
+          },
+        },
+        "最近动作",
+      ),
+      h(
         "a",
         {
           href: "https://github.com/kingcharleslzy-ai/dsh-purge/releases",

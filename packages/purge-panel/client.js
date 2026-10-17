@@ -10276,6 +10276,30 @@ function CommunityMaintenance() {
       { className: "dshpp-row" },
       h(Btn, { disabled: busy, onClick: () => run("check") }, "\u68C0\u67E5\u793E\u533A\u7248\u66F4\u65B0"),
       h(
+        Btn,
+        {
+          disabled: busy,
+          onClick: async () => {
+            try {
+              const r = await apiJson("/dsh-purge/audit?limit=10");
+              const lines = (r.entries || []).map(
+                (x) => `${new Date(x.at).toLocaleString()}  ${x.event}  ${JSON.stringify(
+                  Object.fromEntries(
+                    Object.entries(x).filter(
+                      ([k]) => !["at", "event", "pid"].includes(k)
+                    )
+                  )
+                )}`
+              );
+              setNotice(lines.length ? lines.join("\n") : "\u8FD8\u6CA1\u6709\u52A8\u4F5C\u8BB0\u5F55");
+            } catch (e) {
+              setNotice(e.message);
+            }
+          }
+        },
+        "\u6700\u8FD1\u52A8\u4F5C"
+      ),
+      h(
         "a",
         {
           href: "https://github.com/kingcharleslzy-ai/dsh-purge/releases",

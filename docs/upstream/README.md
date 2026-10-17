@@ -109,16 +109,11 @@ This project is free and non-profit. Selling courses, the plugin, tokens, or res
 
 Recorded 2026-10-12:
 
-<p align="center">
-  <img src="docs/notice/laozhang-live-1.jpg" width="360" alt="老张的ai live asking for a fee">
-  <img src="docs/notice/laozhang-live-2.jpg" width="360" alt="老张的ai live charging money">
-</p>
+<p align="center"><em>直播间截图已移除（涉及第三方账号信息）。</em></p>
 
 WeChat name **「老张的ai科技」**, same handle as the live-room viewer board. Asked if they were this repo's developer, they said they were. The author said they would report it.
 
-<p align="center">
-  <img src="docs/notice/laozhang-wechat-1.jpg" width="420" alt="老张的ai科技 WeChat claiming to be the developer">
-</p>
+<p align="center"><em>微信聊天截图已移除（涉及第三方隐私）。</em></p>
 
 ---
 

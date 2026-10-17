@@ -124,6 +124,7 @@ purge-community probe new
 - 由 `lib/presets-plugin.js` 注册到 `agentPresets`（**只放文件不会出现在下拉里**）。
 - 安装：`purge-community preset install`；首次注册后，面板/新会话下拉可见。
 - 不要把它当成"额外破甲"——破甲靠宿主补丁，预设只改人格。
+- 回归测试卡：`docs/preset-test.md`（A/B 五条 prompt + 判读标准 + 不通过怎么办）。
 
 ## 9. 版本与兼容
 

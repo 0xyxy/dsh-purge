@@ -35,7 +35,15 @@ test("install is idempotent and never overwrites user edits without force", () =
     assert.equal(first.action, "installed");
     const file = path.join(first.dir, "agent.cordis.yml");
     assert(fs.existsSync(file));
-    assert.equal(fs.readFileSync(file, "utf8"), template());
+    // 落盘时就合并了 #24：模板里的 fetch: false 会被打开
+    const installed = fs.readFileSync(file, "utf8");
+    assert(installed.includes("fetch: true"), "preset ships with web fetch enabled");
+    // 精确断言：装完以后 #24 已无活可干（模板注释里提到 fetch: false 不算）
+    assert.equal(
+      applyReplacementsToText(installed, ALL_PATCHES.find((p) => p.id === 24)).changed,
+      false,
+      "no pending #24 anchor left behind",
+    );
 
     fs.writeFileSync(file, "user edited\n");
     const second = installPreset({ home });
@@ -44,7 +52,7 @@ test("install is idempotent and never overwrites user edits without force", () =
 
     const forced = installPreset({ home, force: true });
     assert.equal(forced.action, "updated");
-    assert.equal(fs.readFileSync(file, "utf8"), template());
+    assert.equal(fs.readFileSync(file, "utf8"), installed);
     assert.equal(presetStatus(home).installed, true);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
@@ -72,7 +80,7 @@ test("a plugin-managed preset is updated in place, a user-edited one is kept", (
     fs.writeFileSync(file, "# managed-by: dsh-purge\nold template\n");
     const updated = installPreset({ home });
     assert.equal(updated.action, "updated");
-    assert.equal(fs.readFileSync(file, "utf8"), template());
+    assert(fs.readFileSync(file, "utf8").includes("fetch: true"));
     // 用户把它改成自己的一份（去掉 marker）后不再覆盖
     fs.writeFileSync(file, "# my own preset\n");
     assert.equal(installPreset({ home }).action, "kept");

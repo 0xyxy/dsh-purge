@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { installPreset, presetStatus, bundledPresetDir } from "../lib/presets.js";
+import { installPreset, presetStatus, bundledPresetDir, userPresetDir } from "../lib/presets.js";
 import { readPresetDefinition } from "../lib/redteam/preset-composition.js";
 import { ALL_PATCHES, applyReplacementsToText } from "../lib/core.js";
 
@@ -61,4 +61,22 @@ test("the bundled preset parses into a registry definition", () => {
   const ids = def.plugins.map((row) => row && row.id).filter(Boolean);
   assert(ids.includes("persona"), "persona row kept");
   assert(!ids.includes("redteam-tools"), "red team rows stripped");
+});
+
+test("a plugin-managed preset is updated in place, a user-edited one is kept", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "purge-preset-managed-"));
+  try {
+    installPreset({ home });
+    const file = path.join(userPresetDir(home), "agent.cordis.yml");
+    // 模拟旧版本模板：仍是插件写的（带 marker），内容不同
+    fs.writeFileSync(file, "# managed-by: dsh-purge\nold template\n");
+    const updated = installPreset({ home });
+    assert.equal(updated.action, "updated");
+    assert.equal(fs.readFileSync(file, "utf8"), template());
+    // 用户把它改成自己的一份（去掉 marker）后不再覆盖
+    fs.writeFileSync(file, "# my own preset\n");
+    assert.equal(installPreset({ home }).action, "kept");
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });

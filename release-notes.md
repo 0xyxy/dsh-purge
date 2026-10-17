@@ -1,6 +1,12 @@
-# 1.3.9
+# 1.4.0
 
-> 1.3.9 = 无限制模式预设真正出现在下拉里（注册到 agentPresets，而不是只落文件）。
+> 1.4.0 = 状态页重做（hero + 折叠）+ 无限制模式改成标准超集 + 预设可被插件更新。
+
+**状态页**：顶部改成一块 hero——一句话说明当前状态（`75/83 条补丁已生效` / `宿主还没解开：点「应用」`）+ 放大的「应用」主按钮 + 一行提示「装好插件、更新过 DSH、或发现模型又开始推脱时：点一次应用，然后退出重开」。删掉了重复的三块指标卡、进度条和「版本与恢复」头部——后者正是那个一直显示"正在检测宿主版本"的元凶（它读的是另一个接口，失败时永远停在检测中）。破甲自检、补丁明细、维护（更新+备份）、高级选项都改成默认收起的折叠块。
+
+**无限制模式**：从"红队预设裁剪"改成 **standard 超集**——补齐 `time-context`、`tool-schedule`、`present`，共 20 行；人设重写为执行优先（直接动手 / 不重复声明边界 / 少铺垫 / 多轮不退化 / 失败换路）。预设文件带 `# managed-by: dsh-purge` 标记：带标记的会被新版自动更新，用户改过（去掉标记）就不再覆盖。
+
+参考了社区项目 [geohotstan/dsh-tabula-rasa-preset](https://github.com/geohotstan/dsh-tabula-rasa-preset)：它用 `persona: {text:'', complete:true}` 清空整个系统提示词。我们**不采用** `complete`——那会把 purge 的注入段一起压掉，等于丢掉破甲提示词层。
 
 DSH 0.1.7+ 的模式下拉只认 `agentPresets.register()`，把文件夹放进 `~/.dsh/.agent-presets/` 不会显示（1.3.7/1.3.8 的骨架就卡在这一步）。新增 `lib/presets-plugin.js` 作为独立插件条目 `dsh-purge-community/presets-plugin`：等 registry 就绪后软注册一次，卸载时释放；首次运行会把 `presets/unrestricted` 落到用户目录。
 

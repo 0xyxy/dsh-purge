@@ -593,3 +593,47 @@
   color: var(--dshpp-mute);
   font-variant-numeric: tabular-nums;
 }
+
+/* 状态页 hero：一眼看到"现在什么状态、下一步点哪" */
+.dshpp-page .dshpp-hero {
+  border: 1px solid var(--dshpp-line);
+  border-radius: 12px;
+  background: var(--dshpp-bg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dshpp-page .dshpp-hero-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.02em;
+  min-width: 0;
+}
+.dshpp-page .dshpp-hero-state b {
+  font-weight: 600;
+}
+.dshpp-page .dshpp-hero-sub {
+  margin-left: auto;
+  color: var(--dshpp-mute);
+  font-size: 0.82em;
+}
+.dshpp-page .dshpp-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dshpp-page .dshpp-btn-lead {
+  padding: 9px 20px;
+  font-size: 0.98em;
+  font-weight: 600;
+  border-radius: 10px;
+}
+.dshpp-page .dshpp-hero-hint {
+  margin: 0;
+  color: var(--dshpp-mute);
+  font-size: 0.84em;
+  line-height: 1.6;
+}

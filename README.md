@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/kingcharleslzy-ai/dsh-purge?label=release)](https://github.com/kingcharleslzy-ai/dsh-purge/releases)
 [![Checks](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml/badge.svg)](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml)
 
-当前版本 **1.3.9** · 适配 **DSH Desktop 0.2.1-rc.2**（rc.1 同样通过） · [English](docs/README.en.md)
+当前版本 **1.4.0** · 适配 **DSH Desktop 0.2.1-rc.2**（rc.1 同样通过） · [English](docs/README.en.md)
 
 </div>
 
@@ -47,6 +47,7 @@ ELECTRON_RUN_AS_NODE=1 "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSe
 | 装完怎么确认 | 没有 | **`purge-community selfcheck`：27 层逐层给证据** |
 | 面板 | 会话上方悬浮按钮 + 独立小窗 | **左侧栏整页**，跟 DSH 原生设置同款字体/间距，说明收进 `?` |
 | 更新 | 指向已停更的上游，分支/覆盖式安装 | 本仓库校验过的发行包（SHA256），保留通道/tag/pin 与多安装位置 |
+| 预设 | 无 | 自带「无限制模式」：标准工具集 + 执行优先人设 |
 | 维护 | 无备份 | 应用/安装/回滚前自动快照（保留 5 份 + 每天 1 份 × 7 天 + 200MB 上限） |
 | 提示词层 | 注入 + 身份剥离 | 再加**尾部破甲强化段**（默认开）、注入位置可切 `head/tail/both` |
 

@@ -194,17 +194,7 @@ export function CommunityMaintenance() {
   return h(
     "section",
     { className: "dshpp-panel", "aria-label": "社区版维护" },
-    h("h3", null, "版本与恢复"),
-    h(
-      "p",
-      null,
-      `Purge Community ${value?.version || "…"} · DSH ${value?.compatibility?.host_version || "…"}`,
-    ),
-    h(
-      "p",
-      { role: "status", className: "dshpp-hint" },
-      value?.compatibility?.message || "正在检查宿主版本…",
-    ),
+    h("h3", null, "维护：更新与本机备份"),
     h(
       "div",
       { className: "dshpp-row" },

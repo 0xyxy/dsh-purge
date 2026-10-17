@@ -826,44 +826,84 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
       { hidden: page !== "status" },
       h(
         "div",
-        { className: "dshpp-actions" },
+        { className: "dshpp-hero" },
         h(
-          Btn,
-          {
-            kind: "primary",
-            disabled: patchBusy || uninstallBusy || !overrideLoaded,
-            onClick: () => doAction("apply", "action.apply"),
-          },
-          patchBusy ? t("btn.apply.busy") : t("btn.apply"),
+          "div",
+          { className: "dshpp-hero-state" },
+          h("i", {
+            className:
+              "dshpp-dot " +
+              (!located
+                ? "is-warn"
+                : patchBusy
+                  ? ""
+                  : tally.pending
+                    ? "is-warn"
+                    : "is-ok"),
+          }),
+          h(
+            "b",
+            null,
+            !located
+              ? sealedReady
+                ? "宿主还没解开：点「应用」"
+                : "未定位到宿主：点「应用」重试"
+              : tally.pending
+                ? `还有 ${tally.pending} 条待应用`
+                : `${applied}/${total} 条补丁已生效`,
+          ),
+          h(
+            "span",
+            { className: "dshpp-hero-sub" },
+            t("surface." + hostSurface),
+          ),
         ),
         h(
-          Btn,
-          {
-            kind: "danger",
-            disabled: patchBusy || uninstallBusy,
-            onClick: () => doAction("revert", "action.revert"),
-          },
-          t("btn.revert"),
+          "div",
+          { className: "dshpp-hero-actions" },
+          h(
+            Btn,
+            {
+              kind: "primary",
+              className: "dshpp-btn-lead",
+              disabled: patchBusy || uninstallBusy || !overrideLoaded,
+              onClick: () => doAction("apply", "action.apply"),
+            },
+            patchBusy ? t("btn.apply.busy") : t("btn.apply"),
+          ),
+          h(
+            Btn,
+            {
+              kind: "danger",
+              disabled: patchBusy || uninstallBusy,
+              onClick: () => doAction("revert", "action.revert"),
+            },
+            t("btn.revert"),
+          ),
+          h(
+            Btn,
+            {
+              kind: "solid-danger",
+              disabled: patchBusy || uninstallBusy,
+              onClick: () => setAskUninstall(true),
+            },
+            uninstallBusy ? t("btn.uninstall.busy") : t("btn.uninstall"),
+          ),
+          h(
+            Btn,
+            {
+              tiny: true,
+              onClick: loadAll,
+              disabled: patchBusy || uninstallBusy,
+            },
+            "刷新",
+          ),
         ),
         h(
-          Btn,
-          {
-            kind: "solid-danger",
-            disabled: patchBusy || uninstallBusy,
-            onClick: () => setAskUninstall(true),
-          },
-          uninstallBusy ? t("btn.uninstall.busy") : t("btn.uninstall"),
+          "p",
+          { className: "dshpp-hero-hint" },
+          "装好插件、更新过 DSH、或发现模型又开始推脱时：点一次「应用」，然后退出并重开 DSH，就会恢复。",
         ),
-        h(
-          Btn,
-          {
-            tiny: true,
-            onClick: loadAll,
-            disabled: patchBusy || uninstallBusy,
-          },
-          "刷新",
-        ),
-        h("span", { className: "dshpp-pill" }, t("surface." + hostSurface)),
         noticeNode(notice),
       ),
       h(
@@ -889,119 +929,6 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
         ),
         noticeNode(updateNotice),
       ),
-      s
-        ? h(
-            "div",
-            { className: "dshpp-metrics" },
-            h(
-              "div",
-              { className: "dshpp-metric" },
-              h(
-                "b",
-                null,
-                located
-                  ? applied + " / " + total
-                  : patchesLost
-                    ? t("metric.lost.count")
-                    : sealedReady
-                      ? t("metric.sealed.count")
-                      : t("metric.unlocated.count"),
-              ),
-              h(
-                "span",
-                null,
-                !located
-                  ? patchesLost
-                    ? t("metric.lost")
-                    : sealedReady
-                      ? t("metric.sealed")
-                      : t("metric.unlocated")
-                  : metricNotes.length
-                    ? metricNotes.join(" · ")
-                    : t("metric.purged"),
-              ),
-            ),
-            h(
-              "div",
-              { className: "dshpp-metric" },
-              h(
-                "b",
-                {
-                  style: {
-                    fontSize: 13,
-                    fontFamily: "var(--dshpp-mono)",
-                    fontWeight: 500,
-                  },
-                },
-                h(
-                  "span",
-                  { className: "dshpp-pill is-" + shimKind(s.shim_cmd) },
-                  "cmd",
-                ),
-                " ",
-                h(
-                  "span",
-                  { className: "dshpp-pill is-" + shimKind(s.shim_ps1) },
-                  "ps1",
-                ),
-                " ",
-                h(
-                  "span",
-                  {
-                    className:
-                      "dshpp-pill is-" + shimKind(s.shim_bin || "missing"),
-                  },
-                  "unix",
-                ),
-              ),
-              h(
-                "span",
-                null,
-                s.shim_cmd === "n/a" &&
-                  s.shim_ps1 === "n/a" &&
-                  (s.shim_bin === "n/a" || !s.shim_bin)
-                  ? t("metric.shim.na")
-                  : t("metric.shim"),
-              ),
-            ),
-            h(
-              "div",
-              { className: "dshpp-metric" },
-              h(
-                "b",
-                null,
-                s.has_backup ? t("metric.bak.yes") : t("metric.bak.no"),
-              ),
-              h("span", null, t("metric.bak.hint")),
-            ),
-          )
-        : h(
-            "div",
-            { className: "dshpp-metrics" },
-            h(
-              "div",
-              { className: "dshpp-metric" },
-              h("div", { className: "dshpp-skel" }),
-              h("div", { className: "dshpp-skel", style: { width: "40%" } }),
-            ),
-            h(
-              "div",
-              { className: "dshpp-metric" },
-              h("div", { className: "dshpp-skel" }),
-              h("div", { className: "dshpp-skel", style: { width: "40%" } }),
-            ),
-            h(
-              "div",
-              { className: "dshpp-metric" },
-              h("div", { className: "dshpp-skel" }),
-              h("div", { className: "dshpp-skel", style: { width: "40%" } }),
-            ),
-          ),
-      h(
-        "div",
-        { className: "dshpp-bar", "aria-hidden": "true" },
-        h("i", { style: { width: pct + "%" } }),
-      ),
       h(
         "details",
         { className: "dshpp-fold" },
@@ -1012,9 +939,7 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
           h(
             "b",
             null,
-            s && s.patches_total
-              ? `${applied}/${total} 已应用${tally.pending ? ` · ${tally.pending} 待应用` : ""}`
-              : "",
+            s && s.ai_base ? `${applied}/${total} 已应用` : "未定位宿主",
           ),
         ),
         h(PatchGroups, { state: s }),

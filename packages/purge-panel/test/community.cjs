@@ -57,6 +57,7 @@ const responses = {
   "/dsh-purge/own-servers": { ok: true, content: "example.test" },
   "/dsh-purge/hooks-deny": { ok: true, hooksDenyBypass: false },
   "/dsh-purge/drill-grant": { ok: true, granted: false },
+  "/dsh-purge/boost": { ok: true, enabled: true },
   "/dsh-purge/selfcheck": {
     ok: true,
     host: "/fixture",
@@ -247,6 +248,10 @@ win.confirm = () => true;
   );
   const selfcheckTree = JSON.stringify(tree.toJSON());
   assert(selfcheckTree.includes("破甲自检"), "self-check block renders");
+  assert(
+    selfcheckTree.includes("破甲强化段"),
+    "boost toggle renders next to the self-check",
+  );
   assert(
     selfcheckTree.includes("沙箱 confine 直通") &&
       selfcheckTree.includes("文件系统围栏禁用"),

@@ -1,6 +1,8 @@
-# 1.3.7
+# 1.3.8
 
-> 1.3.7 = 文档版本自检进 CI + 安装器装完即自检 + 自带 `unrestricted` 预设骨架。
+> 1.3.8 = 安装器的自检摘要改用文本模式（1.3.7 打到的是 JSON 片段）。
+
+`purge-community selfcheck --text` 只输出人读摘要；`scripts/install.sh` 用它打印「DSH 版本 · 兼容级别 · 宿主补丁」和结论。之前的实现取到了 JSON 的第二行，等于没打出有用信息。
 
 - **`scripts/check-docs.mjs`**：断言 package.json 版本 = release-notes 首行 = README 版本行 = 英文 README，并检查一行安装命令还在；接进 `community.yml` 与 `release.yml`，版本改了文档没跟上会直接红。
 - **安装器装完自检**：`scripts/install.sh` 在安装成功后顺手跑一次 `selfcheck`，打印"DSH 版本 · 兼容级别 · 宿主补丁"和结论，不用再记第二条命令。

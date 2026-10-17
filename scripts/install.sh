@@ -76,7 +76,7 @@ HOMEDIR="${DSH_HOME:-$HOME/.dsh}"
 SUMMARY=""
 for cli in "$HOMEDIR"/profiles/*/node_modules/dsh-purge-community/bin/community.js; do
   [ -f "$cli" ] || continue
-  SUMMARY=$(DSH_HOME="$HOMEDIR" ELECTRON_RUN_AS_NODE=1 "$CLI" "$cli" selfcheck 2>/dev/null | sed -n '2p;$p' || true)
+  SUMMARY=$(DSH_HOME="$HOMEDIR" ELECTRON_RUN_AS_NODE=1 "$CLI" "$cli" selfcheck --text 2>/dev/null | sed -n '2p;$p' || true)
   break
 done
 if [ -n "$SUMMARY" ]; then

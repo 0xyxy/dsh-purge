@@ -63,6 +63,10 @@ if (LEGACY[op]) {
         lines.push(`  ${mark} ${layer.title}  ${layer.applied}/${layer.total}${tail ? "  " + tail : ""}`);
       }
       lines.push("", report.ok ? "结论：所有层都在位。" : "结论：有层未生效，见上面 ✗ 项。");
+      if (rawArgs.includes("--text")) {
+        console.log(lines.join("\n"));
+        process.exit(report.ok ? 0 : 1);
+      }
       result = { ok: report.ok, text: lines.join("\n"), summary: report.summary };
     }
   } else if (op === "diagnose") {

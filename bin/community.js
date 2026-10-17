@@ -4,7 +4,9 @@ import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { Maintenance, compatibility, ROOT, PACKAGE } from "../lib/community.js";
 import { findDshHome, findAiBase, patchDrift } from "../lib/core.js";
-import { selfCheck } from "../lib/selfcheck.js";
+import { selfCheck, resolveHost } from "../lib/selfcheck.js";
+import { readOverrides, writeOverride, clearOverride } from "../lib/anchors.js";
+import { readFileSync, writeFileSync } from "node:fs";
 import { installPreset, presetStatus } from "../lib/presets.js";
 import { readBoost, writeBoost } from "../lib/boost.js";
 import { createProbe, readProbe } from "../lib/probe.js";
@@ -12,7 +14,7 @@ const rawArgs = process.argv.slice(2);
 // 原版 CLI 的全部动作（apply/revert/uninstall/edit/status）原样保留，
 // purge-community 只做转发，避免两套实现漂移。
 const LEGACY = { apply: "--apply", revert: "--revert", uninstall: "--uninstall", edit: "--edit", "legacy-status": "--status" };
-const [op = "status", argument] = rawArgs,
+const [op = "status", argument, argument2] = rawArgs,
   home = process.env.DSH_HOME || findDshHome();
 // A supplied Desktop CLI is sufficient for installation. Avoid a recursive host scan
 // from ordinary Node; packaged Electron can resolve its own resources directly.
@@ -37,7 +39,81 @@ if (LEGACY[op]) {
   process.exitCode = run.status === null ? 1 : run.status;
 } else try {
   let result;
-  if (op === "probe") {
+  if (op === "reanchor") {
+    const sub = argument || "list";
+    const host = aiBase || resolveHost("");
+    const drift = await patchDrift(host);
+    const rows = [...drift.drifted, ...drift.optionalDrift];
+    const byId = (id) => rows.find((r) => r.id === Number(id));
+    if (sub === "list") {
+      result = {
+        host: drift.host,
+        overrides: readOverrides(),
+        drifted: rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          optional: r.optional,
+          anchors: r.anchors.map((a) => ({ index: a.index, file: a.file, line: a.suggestion?.line })),
+        })),
+      };
+    } else if (sub === "show") {
+      const row = byId(argument2);
+      if (!row) throw Error(`没有漂移的补丁 #${argument2}`);
+      result = row;
+    } else if (sub === "clear") {
+      result = { cleared: true, overrides: clearOverride(home, argument2, rawArgs.includes("--index") ? Number(rawArgs[rawArgs.indexOf("--index") + 1]) : undefined) };
+    } else if (sub === "apply") {
+      const row = byId(argument2);
+      if (!row) throw Error(`没有漂移的补丁 #${argument2}`);
+      const idxFlag = rawArgs.indexOf("--index");
+      const target = idxFlag >= 0 ? row.anchors.find((a) => a.index === Number(rawArgs[idxFlag + 1])) : row.anchors[0];
+      if (!target) throw Error("找不到对应的锚点（用 --index 指定）");
+      const text = readFileSync(target.file, "utf8").replace(/\r\n/g, "\n");
+      const lines = text.split("\n");
+      const oldCount = String(target.head || "").split("\n").length;
+      const linesFlag = rawArgs.indexOf("--lines");
+      let from;
+      let to;
+      if (linesFlag >= 0) {
+        const [a, b] = String(rawArgs[linesFlag + 1]).split("-").map(Number);
+        if (!Number.isInteger(a) || !Number.isInteger(b) || a < 1 || b < a) throw Error("--lines 需要形如 120-132");
+        from = a - 1;
+        to = b;
+      } else {
+        const center = (target.suggestion?.line || 1) - 1;
+        const span = Math.max(1, Math.min(oldCount || 3, 40));
+        from = Math.max(0, center - Math.floor(span / 2));
+        to = Math.min(lines.length, from + span);
+      }
+      const candidate = lines.slice(from, to).join("\n");
+      if (!candidate.trim()) throw Error("取到的片段为空，用 --lines 指定范围");
+      const occurrences = text.split(candidate).length - 1;
+      if (occurrences !== 1) throw Error(`候选片段在文件里出现 ${occurrences} 次，必须唯一；用 --lines 缩小范围`);
+      const preview = {
+        patch: row.id,
+        name: row.name,
+        index: target.index,
+        file: target.file,
+        lines: `${from + 1}-${to}`,
+        candidate: candidate.slice(0, 800),
+        applies: (await import("../lib/core.js")).applyReplacementsToText(
+          text,
+          { ...row, replacements: [{ pattern: candidate, replace: "x" }], markers: ["__never__"] },
+          target.file,
+        ).changed,
+      };
+      if (!rawArgs.includes("--yes")) {
+        result = { dryRun: true, ...preview, hint: "确认无误后加 --yes 写入本地重锚覆盖" };
+      } else {
+        writeOverride(home, row.id, target.index, candidate, { host: drift.host });
+        const core = await import("../lib/core.js");
+        core.refreshAnchorOverrides();
+        result = { written: true, ...preview, status: (await core.patchStatus(host))[row.id] };
+      }
+    } else {
+      throw Error("用法：purge-community reanchor list | show <id> | apply <id> [--index n] [--lines a-b] [--yes] | clear <id>");
+    }
+  } else if (op === "probe") {
     if (argument === "new" || argument === "create") {
       const probe = createProbe();
       result = { ok: true, ...probe };

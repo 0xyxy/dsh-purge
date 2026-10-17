@@ -1,6 +1,8 @@
-# 1.5.0
+# 1.5.1
 
-> 1.5.0 = 快照内容寻址去重 + 面向 agent 的 AGENTS.md + README 同步。
+> 1.5.1 = 半自动重锚（本地锚点覆盖，不改插件源码）。
+
+宿主升级把锚点改坏时，`diagnose` 现在给的不只是行号：`reanchor apply <id> --lines A-B` 会把当前宿主里的真实片段取出来做候选（校验唯一性、先 dry-run 预览），加 `--yes` 后写成 `~/.dsh/dsh-purge/anchor-overrides.json` 里的本地覆盖；补丁引擎按索引套用，`reanchor clear <id>` 即可撤销。覆盖随宿主版本记录，换版本后一眼能看出哪些是本地钉的。
 
 - **快照去重**：大于 32KB 的文件按 sha256 存进 `backups/objects/`，快照只留引用；同一份 `client.js` 只占一份空间。实测单份快照 9.0MB → **2.0MB**，`verify` 会逐个校验对象哈希，`prune` 之后自动 GC 没人引用的对象。
 - **AGENTS.md**：给 agent 看的操作手册——五层模型、命令与退出码、症状→动作决策树、补丁表怎么读怎么加、状态文件与不变量。`check:docs` 现在也校验它的版本行。

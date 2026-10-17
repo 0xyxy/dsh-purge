@@ -1,7 +1,7 @@
 # AGENTS.md — 给 AI agent 的 Purge 使用说明书
 
 > 这份文件是写给**在 DSH 里干活的 agent** 的，不是营销文档。
-> 当前版本：**1.5.0** · 适配 DSH Desktop **0.2.1-rc.2**（rc.1 同样通过）
+> 当前版本：**1.5.1** · 适配 DSH Desktop **0.2.1-rc.2**（rc.1 同样通过）
 > 版本号由 `npm run check:docs` 与 `package.json` 校验，发版必须同步。
 
 ---
@@ -52,6 +52,7 @@ selfcheck 全绿 = 可以开工
 | `purge-community status` | 宿主路径、补丁计数 | 0 |
 | `purge-community selfcheck [--json\|--text]` | 27 层逐层证据 | **broken → 1**，pending/ok → 0 |
 | `purge-community diagnose [--json]` | 锚点漂移诊断（含行号 + 片段） | 0 |
+| `purge-community reanchor list\|show\|apply <id> [--index n] [--lines a-b] [--yes]\|clear <id>` | 半自动重锚：把新锚点钉成本地覆盖 | 0 |
 | `purge-community probe [new]` | 生成/查看运行时探针 | 0 |
 | `purge-community boost [on\|off]` | 尾部强化段开关 | 0 |
 | `purge-community preset [status\|install [--force]]` | `unrestricted` 预设落盘 | 0 |
@@ -95,6 +96,7 @@ purge-community probe new
 | --- | --- |
 | `$DSH_HOME/dsh-purge/tuning.json` | `{boost, injectPosition, askNoBlock}` |
 | `$DSH_HOME/dsh-purge/probe.json` | 探针 nonce（30 分钟 TTL） |
+| `$DSH_HOME/dsh-purge/anchor-overrides.json` | 本地重锚覆盖（不改插件源码；删掉即恢复出厂锚点） |
 | `$DSH_HOME/dsh-purge/applied.json` · `installed-rev` | 上次应用的插件版本 |
 | `$DSH_HOME/dsh-purge-community/backups/<id>/` | 快照（`manifest.json` + 小文件；大文件在 `objects/`） |
 | `$DSH_HOME/.agent-presets/unrestricted/` | 无限制模式预设（首行 `# managed-by: dsh-purge` 时会被新版覆盖） |
@@ -112,6 +114,7 @@ purge-community probe new
   3. 在 `test/patch-anchors.test.mjs` 里钉一份真实源码片段做回归；
   4. `optional: true` 用于第三方插件目标（不在场时显示"不适用"而不是失败）。
 - 宿主升级后锚点漂移：`diagnose` 会给出文件、行号、旧锚点首行、以及**可能的新落点**片段。
+- 确认新落点后：`reanchor apply <id> --lines A-B`（先看 dry-run 的候选片段，再加 `--yes` 写入）。覆盖存 `anchor-overrides.json`，引擎会把它当该条的 pattern；`reanchor clear <id>` 撤销。
 
 ## 8. 预设：`unrestricted`（无限制模式）
 
@@ -124,7 +127,7 @@ purge-community probe new
 
 | 组件 | 值 |
 | --- | --- |
-| 插件 | `dsh-purge-community` 1.5.0 |
+| 插件 | `dsh-purge-community` 1.5.1 |
 | 已验证宿主 | DSH Desktop 0.2.1-rc.1 / 0.2.1-rc.2 |
 | 其它宿主 | 允许应用，但 `selfcheck` 会标"未验证"；先看 `diagnose` |
 | Node | ≥18（桌面版自带运行时即可） |

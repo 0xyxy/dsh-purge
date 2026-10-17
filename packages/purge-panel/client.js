@@ -9743,6 +9743,136 @@ function AuthGate(props) {
   );
 }
 
+// src/api/client.js
+function clientGuessSurface() {
+  try {
+    if (typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent || ""))
+      return "desktop";
+    if (typeof location !== "undefined") {
+      const port = String(location.port || "");
+      if (port === "43120") return "desktop";
+      const host2 = String(location.hostname || "");
+      if (host2 && host2 !== "127.0.0.1" && host2 !== "localhost" && /dsh desktop/i.test(String(location.href || "")))
+        return "desktop";
+    }
+  } catch {
+  }
+  return "";
+}
+function hostSurfaceOf(s) {
+  return s && s.surface || clientGuessSurface() || "web";
+}
+function hostText(t, key, surface) {
+  if (surface && surface !== "web") {
+    const specific = key + "." + surface;
+    const hit = t(specific);
+    if (hit && hit !== specific) return hit;
+  }
+  return t(key);
+}
+function apiUrl(p) {
+  try {
+    return new URL(p, window.location.origin).toString();
+  } catch {
+    return p;
+  }
+}
+function apiTimeoutMs(p, init) {
+  const path = String(p || "");
+  const method = String(init && init.method || "GET").toUpperCase();
+  if (path.indexOf("/dsh-purge/community") !== -1)
+    return method === "POST" ? 6e5 : 2e4;
+  if (path.indexOf("/dsh-purge/update") !== -1)
+    return method === "POST" ? 18e4 : 45e3;
+  if (path.indexOf("/dsh-purge/uninstall") !== -1) return 9e4;
+  if (path.indexOf("/dsh-purge/skill") !== -1)
+    return method === "POST" ? 12e4 : 2e4;
+  if (path.indexOf("/dsh-purge/status") !== -1) return 6e4;
+  if (path.indexOf("/dsh-purge/apply") !== -1) return 24e4;
+  if (path.indexOf("/dsh-purge/revert") !== -1) return 12e4;
+  if (path.indexOf("/dsh-purge/restart") !== -1) return 6e4;
+  return 2e4;
+}
+function isAbortError(e) {
+  const msg = String(e && e.message || e || "");
+  return e && e.name === "AbortError" || /aborted|abort/i.test(msg);
+}
+function apiError(message, status) {
+  return Object.assign(new Error(message), { status });
+}
+async function apiJson(p, init) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), apiTimeoutMs(p, init));
+  try {
+    const r = await fetch(
+      apiUrl(p),
+      Object.assign(
+        { cache: "no-store", credentials: "same-origin", signal: ctrl.signal },
+        init || {}
+      )
+    );
+    const text = await r.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      throw apiError(r.status + " non-json: " + text.slice(0, 120), r.status);
+    }
+    if (!r.ok)
+      throw apiError(
+        data && (data.error || data.message) || r.status + " " + r.statusText,
+        r.status
+      );
+    return data;
+  } catch (e) {
+    if (isAbortError(e)) throw new Error("timeout");
+    const msg = String(e && e.message || e || "");
+    if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+      throw new Error("\u8FDE\u4E0D\u4E0A\u63A5\u53E3\uFF0C\u8BF7\u786E\u8BA4 dsh \u8FD8\u5728\u8DD1\u540E Ctrl+F5");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function promptBoxEmpty(text) {
+  return !String(text || "").trim();
+}
+function responseNeedsPrompt(d) {
+  return Boolean(d && (d.needPrompt || d.injectSource === "none"));
+}
+function warnNeedPrompt(d, tr) {
+  if (!responseNeedsPrompt(d)) return false;
+  window.alert(tr("need.prompt"));
+  return true;
+}
+async function bothInjectEmpty(overrideText, defaultText) {
+  if (!promptBoxEmpty(overrideText)) return false;
+  if (!promptBoxEmpty(defaultText)) return false;
+  return true;
+}
+function rulesApi(op, extra) {
+  return apiJson("/dsh-purge/rules", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(Object.assign({ op }, extra || {}))
+  });
+}
+function skillsRouteMissing(e) {
+  return e?.status === 404 || e?.status === 405;
+}
+function skillsApi(op, extra) {
+  const init = {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(Object.assign({ op }, extra || {}))
+  };
+  return apiJson("/dsh-purge/skills", init).catch((e) => {
+    if (!skillsRouteMissing(e)) throw e;
+    return apiJson("/dsh-purge/skill", init);
+  });
+}
+
 // src/components/patch-status.js
 function statusKind(st) {
   if (st === "applied" || st === "already") return "ok";
@@ -9915,134 +10045,6 @@ function Pill({ value, label }) {
     { className: "dshpp-pill is-" + statusKind(value) },
     label || statusLabel(value, t)
   );
-}
-
-// src/api/client.js
-function clientGuessSurface() {
-  try {
-    if (typeof navigator !== "undefined" && /electron/i.test(navigator.userAgent || ""))
-      return "desktop";
-    if (typeof location !== "undefined") {
-      const port = String(location.port || "");
-      if (port === "43120") return "desktop";
-      const host2 = String(location.hostname || "");
-      if (host2 && host2 !== "127.0.0.1" && host2 !== "localhost" && /dsh desktop/i.test(String(location.href || "")))
-        return "desktop";
-    }
-  } catch {
-  }
-  return "";
-}
-function hostSurfaceOf(s) {
-  return s && s.surface || clientGuessSurface() || "web";
-}
-function hostText(t, key, surface) {
-  if (surface && surface !== "web") {
-    const specific = key + "." + surface;
-    const hit = t(specific);
-    if (hit && hit !== specific) return hit;
-  }
-  return t(key);
-}
-function apiUrl(p) {
-  try {
-    return new URL(p, window.location.origin).toString();
-  } catch {
-    return p;
-  }
-}
-function apiTimeoutMs(p, init) {
-  const path = String(p || "");
-  const method = String(init && init.method || "GET").toUpperCase();
-  if (path.indexOf("/dsh-purge/update") !== -1)
-    return method === "POST" ? 18e4 : 45e3;
-  if (path.indexOf("/dsh-purge/uninstall") !== -1) return 9e4;
-  if (path.indexOf("/dsh-purge/skill") !== -1)
-    return method === "POST" ? 12e4 : 2e4;
-  if (path.indexOf("/dsh-purge/status") !== -1) return 6e4;
-  if (path.indexOf("/dsh-purge/apply") !== -1) return 24e4;
-  if (path.indexOf("/dsh-purge/revert") !== -1) return 12e4;
-  if (path.indexOf("/dsh-purge/restart") !== -1) return 6e4;
-  return 2e4;
-}
-function isAbortError(e) {
-  const msg = String(e && e.message || e || "");
-  return e && e.name === "AbortError" || /aborted|abort/i.test(msg);
-}
-function apiError(message, status) {
-  return Object.assign(new Error(message), { status });
-}
-async function apiJson(p, init) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), apiTimeoutMs(p, init));
-  try {
-    const r = await fetch(
-      apiUrl(p),
-      Object.assign(
-        { cache: "no-store", credentials: "same-origin", signal: ctrl.signal },
-        init || {}
-      )
-    );
-    const text = await r.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      throw apiError(r.status + " non-json: " + text.slice(0, 120), r.status);
-    }
-    if (!r.ok)
-      throw apiError(
-        data && (data.error || data.message) || r.status + " " + r.statusText,
-        r.status
-      );
-    return data;
-  } catch (e) {
-    if (isAbortError(e)) throw new Error("timeout");
-    const msg = String(e && e.message || e || "");
-    if (/failed to fetch|networkerror|load failed/i.test(msg)) {
-      throw new Error("\u8FDE\u4E0D\u4E0A\u63A5\u53E3\uFF0C\u8BF7\u786E\u8BA4 dsh \u8FD8\u5728\u8DD1\u540E Ctrl+F5");
-    }
-    throw e;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-function promptBoxEmpty(text) {
-  return !String(text || "").trim();
-}
-function responseNeedsPrompt(d) {
-  return Boolean(d && (d.needPrompt || d.injectSource === "none"));
-}
-function warnNeedPrompt(d, tr) {
-  if (!responseNeedsPrompt(d)) return false;
-  window.alert(tr("need.prompt"));
-  return true;
-}
-async function bothInjectEmpty(overrideText, defaultText) {
-  if (!promptBoxEmpty(overrideText)) return false;
-  if (!promptBoxEmpty(defaultText)) return false;
-  return true;
-}
-function rulesApi(op, extra) {
-  return apiJson("/dsh-purge/rules", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(Object.assign({ op }, extra || {}))
-  });
-}
-function skillsRouteMissing(e) {
-  return e?.status === 404 || e?.status === 405;
-}
-function skillsApi(op, extra) {
-  const init = {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(Object.assign({ op }, extra || {}))
-  };
-  return apiJson("/dsh-purge/skills", init).catch((e) => {
-    if (!skillsRouteMissing(e)) throw e;
-    return apiJson("/dsh-purge/skill", init);
-  });
 }
 
 // src/components/advanced.js
@@ -11027,7 +11029,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
     { className: "dshpp-panel", "aria-label": t("purge.title") },
     h(
       "div",
-      { hidden: page !== "status" },
+      { hidden: page !== "status" || false },
       h(
         "div",
         { className: "dshpp-head" },
@@ -11163,7 +11165,11 @@ function PurgifySection({ page = "status", onStatus } = {}) {
         "details",
         null,
         h("summary", null, "\u9AD8\u7EA7\u9009\u9879"),
-        h(HooksDenySection, { onSaved: loadAll })
+        false ? h(
+          "p",
+          { className: "dshpp-hint" },
+          "\u65E7\u5BBF\u4E3B\u8865\u4E01\u672A\u9A8C\u8BC1\uFF0C\u6B64\u7248\u672C\u4E0D\u4FEE\u6539 Hooks \u62E6\u622A\u3002"
+        ) : h(HooksDenySection, { onSaved: loadAll })
       ),
       h(
         "div",
@@ -11172,7 +11178,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "primary",
-            disabled: patchBusy || uninstallBusy || !overrideLoaded,
+            disabled: patchBusy || uninstallBusy || !overrideLoaded || false,
             onClick: () => doAction("apply", "action.apply")
           },
           patchBusy ? t("btn.apply.busy") : t("btn.apply")
@@ -11181,8 +11187,9 @@ function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "danger",
-            disabled: patchBusy || uninstallBusy,
-            onClick: () => doAction("revert", "action.revert")
+            disabled: patchBusy || uninstallBusy || false,
+            onClick: () => doAction("revert", "action.revert"),
+            title: false ? "\u8BF7\u4F7F\u7528\u4E0A\u65B9\u793E\u533A\u7248\u63D2\u4EF6\u56DE\u6EDA" : void 0
           },
           t("btn.revert")
         ),
@@ -11190,7 +11197,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
           Btn,
           {
             kind: "solid-danger",
-            disabled: patchBusy || uninstallBusy,
+            disabled: patchBusy || uninstallBusy || false,
             onClick: () => setAskUninstall(true)
           },
           uninstallBusy ? t("btn.uninstall.busy") : t("btn.uninstall")
@@ -11399,7 +11406,7 @@ function PurgifySection({ page = "status", onStatus } = {}) {
 }
 
 // src/state/session-context.js
-var import_react10 = require("react");
+var import_react11 = require("react");
 var host = null;
 var listeners = /* @__PURE__ */ new Set();
 function notify() {
@@ -11458,7 +11465,7 @@ function clientCurrentCwd() {
   }
 }
 function useCurrentCwd() {
-  return (0, import_react10.useSyncExternalStore)(subscribe, clientCurrentCwd, () => "");
+  return (0, import_react11.useSyncExternalStore)(subscribe, clientCurrentCwd, () => "");
 }
 
 // src/components/rules.js
@@ -12321,11 +12328,16 @@ function SettingsRoot(props = {}) {
     h(
       "header",
       { className: "dshpp-native-head" },
-      h("div", null, h("h2", null, "Purge"), h("p", null, "\u63D2\u4EF6\u8BBE\u7F6E")),
+      h(
+        "div",
+        null,
+        h("h2", null, false ? "Purge Community" : "Purge"),
+        h("p", null, "\u63D2\u4EF6\u8BBE\u7F6E")
+      ),
       h(
         "span",
         { className: "dshpp-native-badge" },
-        "\u72EC\u7ACB\u754C\u9762 1.1.2"
+        (false ? "\u793E\u533A\u7248 " : "\u72EC\u7ACB\u754C\u9762 ") + "1.1.2"
       )
     ),
     h(CompatibilityNote, { status: backendStatus }),
@@ -12354,6 +12366,7 @@ function SettingsRoot(props = {}) {
     h(
       "div",
       { className: "dshpp-native-content" },
+      false ? h(CommunityMaintenance) : null,
       h(
         "div",
         { hidden: !["status", "prompt", "more"].includes(page) },
@@ -12379,7 +12392,7 @@ function SettingsRoot(props = {}) {
         h(
           "p",
           { className: "dshpp-attribution" },
-          "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4\uFF1B\u5B98\u65B9 Purge \u53EF\u5355\u72EC\u66F4\u65B0\u3002\u57FA\u4E8E YuJunZhiXue/dsh-purge 1.1.71\uFF08MIT\uFF09\u3002"
+          false ? "\u57FA\u4E8E YuJunZhiXue/dsh-purge 1.1.71 \u72EC\u7ACB\u7EF4\u62A4\uFF0C\u4FDD\u7559\u539F\u4F5C\u8005\u7F72\u540D\uFF1B\u66F4\u65B0\u4EC5\u6765\u81EA\u672C fork\u3002" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4\uFF1B\u5B98\u65B9 Purge \u53EF\u5355\u72EC\u66F4\u65B0\u3002\u57FA\u4E8E YuJunZhiXue/dsh-purge 1.1.71\uFF08MIT\uFF09\u3002"
         )
       ),
       page === "drill" ? h(
@@ -12414,7 +12427,7 @@ function installLegacyVisibility(doc = globalThis.document) {
 }
 
 // src/entry.js
-var name = "dsh-purge-panel";
+var name = false ? "dsh-purge-community" : "dsh-purge-panel";
 var inject = ["slots", "locale"];
 function PurgeIcon({ size = 20 } = {}) {
   return h(
@@ -12468,14 +12481,14 @@ function apply(ctx) {
       () => host2.sidebarRightTabs.register({
         id: "dsh-purge",
         kind: "dsh-purge",
-        title: () => "Purge",
+        title: () => false ? "Purge Community" : "Purge",
         keepMounted: true,
         guide: [
           {
             id: "dsh-purge",
             order: 60,
-            title: () => "Purge",
-            description: () => "\u72EC\u7ACB\u754C\u9762 \xB7 \u5B98\u65B9\u63D2\u4EF6\u53EF\u5355\u72EC\u66F4\u65B0",
+            title: () => false ? "Purge Community" : "Purge",
+            description: () => false ? "\u793E\u533A\u7EF4\u62A4 \xB7 \u517C\u5BB9\u68C0\u6D4B\u3001\u5907\u4EFD\u4E0E\u56DE\u6EDA" : "\u72EC\u7ACB\u754C\u9762 \xB7 \u5B98\u65B9\u63D2\u4EF6\u53EF\u5355\u72EC\u66F4\u65B0",
             icon: PurgeIcon
           }
         ]
@@ -12502,7 +12515,7 @@ function apply(ctx) {
     () => ctx.slots.register(
       {
         name: "plugins.bundle.config",
-        key: "dsh-purge-panel",
+        key: false ? "dsh-purge-community" : "dsh-purge-panel",
         inject: () => ({ t })
       },
       SettingsRoot

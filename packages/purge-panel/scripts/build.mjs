@@ -3,8 +3,13 @@ import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const community = process.argv.includes("--community");
+const projectRoot = path.resolve(root, "../..");
 const pkg = JSON.parse(
-  await fs.readFile(path.join(root, "package.json"), "utf8"),
+  await fs.readFile(
+    path.join(community ? projectRoot : root, "package.json"),
+    "utf8",
+  ),
 );
 const result = await build({
   absWorkingDir: root,
@@ -18,16 +23,21 @@ const result = await build({
   treeShaking: true,
   legalComments: "inline",
   loader: { ".css": "text" },
-  define: { __PANEL_VERSION__: JSON.stringify(pkg.version) },
+  define: {
+    __PANEL_VERSION__: JSON.stringify(pkg.version),
+    __COMMUNITY__: JSON.stringify(community),
+  },
 });
 const output =
   "// Generated from src/ by npm run build. Do not edit.\n" +
   "// Derived UI: YuJunZhiXue/dsh-purge (MIT), see LICENSE.\n" +
-  'window.__ModuleLoader__.load({id:"dsh-purge-panel",factory:(require)=>{\n' +
+  "window.__ModuleLoader__.load({id:" +
+  JSON.stringify(pkg.name) +
+  ",factory:(require)=>{\n" +
   "var module={exports:{}};var exports=module.exports;\n" +
   result.outputFiles[0].text +
   "\nreturn module.exports;\n}});\n";
-const dest = path.join(root, "client.js");
+const dest = path.join(community ? projectRoot : root, "client.js");
 if (process.argv.includes("--check")) {
   if ((await fs.readFile(dest, "utf8")) !== output)
     throw new Error(

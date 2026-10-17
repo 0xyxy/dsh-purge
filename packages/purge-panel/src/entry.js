@@ -13,7 +13,7 @@ import { SettingsRoot } from "./components/settings-shell.js";
 import { bindSessionContext } from "./state/session-context.js";
 import { installLegacyVisibility } from "./state/legacy-visibility.js";
 
-export const name = "dsh-purge-panel";
+export const name = __COMMUNITY__ ? "dsh-purge-community" : "dsh-purge-panel";
 
 export const inject = ["slots", "locale"];
 
@@ -71,14 +71,17 @@ export function apply(ctx) {
         host.sidebarRightTabs.register({
           id: "dsh-purge",
           kind: "dsh-purge",
-          title: () => "Purge",
+          title: () => (__COMMUNITY__ ? "Purge Community" : "Purge"),
           keepMounted: true,
           guide: [
             {
               id: "dsh-purge",
               order: 60,
-              title: () => "Purge",
-              description: () => "独立界面 · 官方插件可单独更新",
+              title: () => (__COMMUNITY__ ? "Purge Community" : "Purge"),
+              description: () =>
+                __COMMUNITY__
+                  ? "社区维护 · 兼容检测、备份与回滚"
+                  : "独立界面 · 官方插件可单独更新",
               icon: PurgeIcon,
             },
           ],
@@ -103,7 +106,7 @@ export function apply(ctx) {
     ctx.slots.register(
       {
         name: "plugins.bundle.config",
-        key: "dsh-purge-panel",
+        key: __COMMUNITY__ ? "dsh-purge-community" : "dsh-purge-panel",
         inject: () => ({ t }),
       },
       SettingsRoot,

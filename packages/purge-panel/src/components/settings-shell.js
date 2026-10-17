@@ -1,3 +1,4 @@
+import { CommunityMaintenance } from "./maintenance.js";
 // UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h, useState, useEffect } from "../shared/react.js";
 import { setTranslate, useT } from "../shared/locale.js";
@@ -15,7 +16,7 @@ import {
 } from "../state/dock.js";
 
 export function CompatibilityNote({ status }) {
-  if (!status) return null;
+  if (__COMMUNITY__ || !status) return null;
   const v = String(status.plugin_version || "");
   const valid = typeof status.patches_total === "number" && !!v;
   if (valid && v === "1.1.71") return null;
@@ -55,11 +56,16 @@ export function SettingsRoot(props = {}) {
     h(
       "header",
       { className: "dshpp-native-head" },
-      h("div", null, h("h2", null, "Purge"), h("p", null, "插件设置")),
+      h(
+        "div",
+        null,
+        h("h2", null, __COMMUNITY__ ? "Purge Community" : "Purge"),
+        h("p", null, "插件设置"),
+      ),
       h(
         "span",
         { className: "dshpp-native-badge" },
-        "独立界面 " + __PANEL_VERSION__,
+        (__COMMUNITY__ ? "社区版 " : "独立界面 ") + __PANEL_VERSION__,
       ),
     ),
     h(CompatibilityNote, { status: backendStatus }),
@@ -88,6 +94,7 @@ export function SettingsRoot(props = {}) {
     h(
       "div",
       { className: "dshpp-native-content" },
+      __COMMUNITY__ && page === "status" ? h(CommunityMaintenance) : null,
       h(
         "div",
         { hidden: !["status", "prompt", "more"].includes(page) },
@@ -117,7 +124,9 @@ export function SettingsRoot(props = {}) {
         h(
           "p",
           { className: "dshpp-attribution" },
-          "界面独立维护；官方 Purge 可单独更新。基于 YuJunZhiXue/dsh-purge 1.1.71（MIT）。",
+          __COMMUNITY__
+            ? "基于 YuJunZhiXue/dsh-purge 1.1.71 独立维护，保留原作者署名；更新仅来自本 fork。"
+            : "界面独立维护；官方 Purge 可单独更新。基于 YuJunZhiXue/dsh-purge 1.1.71（MIT）。",
         ),
       ),
       page === "drill"

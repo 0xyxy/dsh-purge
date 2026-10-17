@@ -1,62 +1,39 @@
-name: Release
-
+name: Community release
 on:
   push:
-    branches:
-      - master
-
+    tags: ['v*']
 permissions:
   contents: write
-
 concurrency:
-  group: release-${{ github.repository }}
+  group: community-release-${{ github.ref }}
   cancel-in-progress: false
-
 jobs:
   release:
-    if: github.repository == 'YuJunZhiXue/dsh-purge'
+    if: github.repository == 'kingcharleslzy-ai/dsh-purge'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
-
-      - name: Syntax-check plugin entry
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/purge-panel/package-lock.json
+      - run: npm --prefix packages/purge-panel ci --ignore-scripts --legacy-peer-deps
+      - run: npm test && npm run check:client && npm run test:ui
+      - run: npm --prefix packages/purge-panel test
+      - name: Build verified release assets
         run: |
-          node --check lib/index.js
-          node --check lib/core.js
-          node --check lib/reapply.js
-          node --input-type=module -e "import './lib/index.js'"
-
-      - name: Publish GitHub Release
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+          test "$GITHUB_REF_NAME" = "v$version"
+          test "$(head -n 1 release-notes.md)" = "# $version"
+          test "$(node -p "require('./package.json').name")" = "dsh-purge-community"
+          npm pack --ignore-scripts
+          sha256sum "dsh-purge-community-$version.tgz" > SHA256SUMS.txt
+      - name: Publish community release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
-          tag="v${version}"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "already published: $tag"
-            exit 0
-          fi
-          first="$(head -n 1 release-notes.md | tr -d '\r')"
-          if [ "$first" != "# ${version}" ]; then
-            echo "release-notes.md 第一行必须是 # ${version}，现在是: ${first}"
-            exit 1
-          fi
-          zip="dsh-purge-${version}.zip"
-          if git rev-parse -q --verify "refs/tags/${tag}^{}" >/dev/null; then
-            commit="$(git rev-parse "refs/tags/${tag}^{}")"
-            git archive --format=zip --prefix="dsh-purge-${version}/" --output="$zip" "$commit"
-            gh release create "$tag" --title "$tag" --notes-file release-notes.md
-          else
-            git archive --format=zip --prefix="dsh-purge-${version}/" --output="$zip" HEAD
-            args=(release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file release-notes.md)
-            case "$version" in
-              *beta*|*alpha*|*rc*) args+=(--prerelease) ;;
-            esac
-            gh "${args[@]}"
-          fi
-          test -s "$zip"
-          gh release upload "$tag" "$zip" --clobber
-          echo "published https://github.com/YuJunZhiXue/dsh-purge/releases/tag/${tag}"
+          gh release create "$GITHUB_REF_NAME" "dsh-purge-community-$version.tgz" SHA256SUMS.txt --verify-tag --title "Purge Community $version" --notes-file release-notes.md

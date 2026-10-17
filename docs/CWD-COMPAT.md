@@ -1,6 +1,6 @@
 # cwd 模板兼容修复
 
-本地兼容包：`1.1.71-compat.cwd.1`。此版本只修复提示词渲染的缺失变量错误，不扩展或重新应用宿主补丁。
+本修复已纳入 Purge Community `1.2.0`；最初本地兼容包为 `1.1.71-compat.cwd.1`。此版本只修复提示词渲染的缺失变量错误，不扩展或重新应用宿主补丁。
 
 关联上游 [issue #114](https://github.com/YuJunZhiXue/dsh-purge/issues/114) 与 [PR #115](https://github.com/YuJunZhiXue/dsh-purge/pull/115)。本机 DSH 0.2.1-rc.1 也只注册 provider/model，注入 `Your working directory is {{cwd}}.` 会在请求发送前报错。
 

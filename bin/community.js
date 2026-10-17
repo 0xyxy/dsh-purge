@@ -7,6 +7,7 @@ import { findDshHome, findAiBase, patchDrift } from "../lib/core.js";
 import { selfCheck } from "../lib/selfcheck.js";
 import { installPreset, presetStatus } from "../lib/presets.js";
 import { readBoost, writeBoost } from "../lib/boost.js";
+import { createProbe, readProbe } from "../lib/probe.js";
 const rawArgs = process.argv.slice(2);
 // 原版 CLI 的全部动作（apply/revert/uninstall/edit/status）原样保留，
 // purge-community 只做转发，避免两套实现漂移。
@@ -36,7 +37,15 @@ if (LEGACY[op]) {
   process.exitCode = run.status === null ? 1 : run.status;
 } else try {
   let result;
-  if (op === "preset") {
+  if (op === "probe") {
+    if (argument === "new" || argument === "create") {
+      const probe = createProbe();
+      result = { ok: true, ...probe };
+    } else {
+      const probe = readProbe();
+      result = { ok: true, active: !!probe, nonce: probe?.nonce || "", hint: "purge-community probe new" };
+    }
+  } else if (op === "preset") {
     const sub = argument || "status";
     if (sub === "install" || sub === "update") {
       result = installPreset({ force: rawArgs.includes("--force") });
@@ -58,14 +67,24 @@ if (LEGACY[op]) {
         "",
       ];
       for (const layer of report.layers) {
-        const mark = layer.ok ? "✓" : "✗";
-        const tail = layer.note || (layer.broken.length ? JSON.stringify(layer.broken) : "");
-        lines.push(`  ${mark} ${layer.title}  ${layer.applied}/${layer.total}${tail ? "  " + tail : ""}`);
+        const mark = layer.state === "pending" ? "⏳" : layer.ok ? "✓" : "✗";
+        const tail = layer.note
+          || (layer.broken.length ? JSON.stringify(layer.broken) : "")
+          || (layer.pending && layer.pending.length ? `待应用 #${layer.pending.join("/#")}` : "");
+        lines.push(`  ${mark} ${layer.title}  ${layer.applied}/${layer.required ?? layer.total}${tail ? "  " + tail : ""}`);
       }
-      lines.push("", report.ok ? "结论：所有层都在位。" : "结论：有层未生效，见上面 ✗ 项。");
+      const pendingCount = (report.summary && report.summary.pending && report.summary.pending.patches) || 0;
+      lines.push(
+        "",
+        report.state === "pending"
+          ? `结论：有 ${pendingCount} 条补丁待应用 —— 点一次「应用」，然后退出重开 DSH 即可。`
+          : report.state === "broken"
+            ? "结论：有层真的没生效（✗），见上面。"
+            : "结论：所有层都在位。",
+      );
       if (rawArgs.includes("--text")) {
         console.log(lines.join("\n"));
-        process.exit(report.ok ? 0 : 1);
+        process.exit(report.state === "broken" ? 1 : 0);
       }
       result = { ok: report.ok, text: lines.join("\n"), summary: report.summary };
     }
@@ -92,7 +111,7 @@ if (LEGACY[op]) {
     });
   } else
     throw Error(
-      "用法：purge-community status | diagnose | selfcheck [--json] | boost on|off | preset [status|install] | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
+      "用法：purge-community status | diagnose | selfcheck [--json] | boost on|off | probe [new] | preset [status|install] | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
     );
   console.log(JSON.stringify(result, null, 2));
 } catch (e) {

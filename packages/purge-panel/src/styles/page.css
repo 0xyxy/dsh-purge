@@ -637,3 +637,17 @@
   font-size: 0.84em;
   line-height: 1.6;
 }
+.dshpp-check.is-warn {
+  color: var(--dshpp-warn);
+}
+
+.dshpp-page .dshpp-probe-msg {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--dshpp-line);
+  background: var(--dshpp-bg-2);
+  font-size: 0.82em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

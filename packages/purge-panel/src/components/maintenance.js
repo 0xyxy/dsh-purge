@@ -45,11 +45,16 @@ export function StatusExtras() {
       setBusy(false);
     }
   }
-  const failed =
-    check && Array.isArray(check.layers)
-      ? check.layers.filter((l) => !l.ok)
-      : [];
-  const total = check && Array.isArray(check.layers) ? check.layers.length : 0;
+  const layers = check && Array.isArray(check.layers) ? check.layers : [];
+  const failed = layers.filter(
+    (l) => l.state === "broken" || (!l.state && !l.ok),
+  );
+  const pendingLayers = layers.filter((l) => l.state === "pending");
+  const pendingPatches = pendingLayers.reduce(
+    (n, l) => n + (l.pending?.length || 0),
+    0,
+  );
+  const total = layers.length;
   return h(
     "section",
     { className: "dshpp-card", "aria-label": "破甲状态" },
@@ -61,7 +66,14 @@ export function StatusExtras() {
         { className: "dshpp-line-main" },
         h("i", {
           className:
-            "dshpp-dot " + (check ? (failed.length ? "is-bad" : "is-ok") : ""),
+            "dshpp-dot " +
+            (check
+              ? failed.length
+                ? "is-bad"
+                : pendingLayers.length
+                  ? "is-warn"
+                  : "is-ok"
+              : ""),
         }),
         "破甲自检",
         h(
@@ -70,7 +82,9 @@ export function StatusExtras() {
           check
             ? failed.length
               ? `${failed.length} 层未生效`
-              : `${total} 层全部在位`
+              : pendingLayers.length
+                ? `${pendingPatches} 条待应用`
+                : `${total} 层全部在位`
             : "检测中…",
         ),
       ),
@@ -87,16 +101,30 @@ export function StatusExtras() {
                   "div",
                   {
                     key: layer.title,
-                    className: "dshpp-check" + (layer.ok ? "" : " is-bad"),
+                    className:
+                      "dshpp-check" +
+                      (layer.state === "pending"
+                        ? " is-warn"
+                        : layer.ok
+                          ? ""
+                          : " is-bad"),
                   },
                   h("i", {
-                    className: "dshpp-dot " + (layer.ok ? "is-ok" : "is-bad"),
+                    className:
+                      "dshpp-dot " +
+                      (layer.state === "pending"
+                        ? "is-warn"
+                        : layer.ok
+                          ? "is-ok"
+                          : "is-bad"),
                   }),
                   h("span", { className: "dshpp-check-name" }, layer.title),
                   h(
                     "span",
                     { className: "dshpp-check-val" },
-                    `${layer.applied}/${layer.required ?? layer.total}`,
+                    layer.state === "pending"
+                      ? `待应用 #${(layer.pending || []).join("/#")}`
+                      : `${layer.applied}/${layer.required ?? layer.total}`,
                   ),
                 ),
               )
@@ -107,6 +135,26 @@ export function StatusExtras() {
         Btn,
         { tiny: true, disabled: busy, onClick: rerun },
         busy ? "…" : "重测",
+      ),
+      h(
+        Btn,
+        {
+          tiny: true,
+          title: "生成一次性探针：下一轮回复里看模型有没有原样回显该标记",
+          onClick: async () => {
+            try {
+              const r = await apiJson("/dsh-purge/probe", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: "{}",
+              });
+              setNotice(r.message || "");
+            } catch (e) {
+              setNotice(e.message);
+            }
+          },
+        },
+        "探针",
       ),
     ),
     h(

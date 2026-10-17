@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { selfCheck, BYPASS_LAYERS } from "../lib/selfcheck.js";
+import { selfCheck, rollupLayers, BYPASS_LAYERS } from "../lib/selfcheck.js";
 
 function fakeHome() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "purge-selfcheck-"));
@@ -74,4 +74,26 @@ test("runtime inject and profile policy are detected from the real files", async
     else process.env.DSH_SURFACE = prevSurface;
     f.close();
   }
+});
+
+test("pending patches are not reported as broken layers", () => {
+  // 24 待应用、37 已应用 → 这一层是 pending，不是 broken
+  const pending = rollupLayers({ 24: "pending", 37: "applied" }, true);
+  const layer = pending.find((l) => l.ids.includes(24));
+  assert.equal(layer.state, "pending");
+  assert.equal(layer.ok, false, "still not green, but not a failure");
+  assert.deepEqual(layer.pending, [24]);
+  assert.deepEqual(layer.broken, []);
+
+  // 锚点对不上才是真的坏
+  const broken = rollupLayers({ 24: "pattern_not_found", 37: "applied" }, true);
+  const bad = broken.find((l) => l.ids.includes(24));
+  assert.equal(bad.state, "broken");
+  assert.equal(bad.broken[0].id, 24);
+
+  // 目标插件没装 → 不适用，不算坏
+  const absent = rollupLayers({ 24: "na", 37: "na" }, true);
+  const na = absent.find((l) => l.ids.includes(24));
+  assert.equal(na.state, "ok");
+  assert(na.note.includes("不适用"));
 });

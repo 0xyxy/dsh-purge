@@ -236,3 +236,37 @@
   margin-top: 32px;
   font-size: 0.78em !important;
 }
+
+/* 演练台：旧版跑在可拖拽悬浮窗里，现在嵌在右侧栏，必须自己撑开并允许滚动 */
+.dshpp-native-drill {
+  width: 100%;
+  min-width: 0;
+  min-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 24px;
+  box-sizing: border-box;
+}
+.dshpp-native-drill > .rt-dock.rt-embedded {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+/* 右侧栏很窄：内部所有 flex 行都得能换行，输入框不能把兄弟元素挤成 1ch 宽 */
+.dshpp-native-drill .rt-dock,
+.dshpp-native-drill .rt-dock * {
+  box-sizing: border-box;
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.dshpp-native-drill .rt-dock input,
+.dshpp-native-drill .rt-dock textarea,
+.dshpp-native-drill .rt-dock select {
+  width: 100%;
+  max-width: 100%;
+}

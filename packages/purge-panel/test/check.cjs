@@ -284,6 +284,24 @@ const test = async () => {
   console.log(
     "PASS: native registry, persistent tab, loaded values, draft preservation across tabs and refresh, no implicit writes, no legacy launchers",
   );
+  // 演练台：旧版靠外层 dock 把 .rt-* 的 CSS 注入 <head>，重构时丢了 → 面板在右侧栏里
+  // 完全没样式。这条守住"CSS 必须随组件一起发出"和"容器要能撑开"。
+  const bundleText = fs.readFileSync(process.env.PANEL_CLIENT, "utf8");
+  assert(
+    bundleText.includes("data-dsh-purge-drill"),
+    "drill stylesheet must be attached by the panel",
+  );
+  assert(
+    bundleText.includes(".rt-dock.rt-embedded"),
+    "the drill CSS itself must ship in the bundle",
+  );
+  assert(
+    /\.dshpp-native-drill\s*\{[^}]*min-height:\s*72vh/.test(bundleText),
+    "the drill container must reserve height inside the narrow sidebar",
+  );
+  console.log(
+    "PASS: drill stylesheet is attached and the container reserves space in the sidebar",
+  );
 };
 test().catch((e) => {
   console.error(e);

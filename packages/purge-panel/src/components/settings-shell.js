@@ -181,6 +181,11 @@ export function SettingsRoot(props = {}) {
         ? h(
             "div",
             { className: "dshpp-native-drill" },
+            // 演练台自带一套 CSS（.rt-*）；旧版由 dock 注入 <head>，重构时丢了，
+            // 结果面板在右侧栏里完全没样式、文字被挤成一列。这里随组件一起挂上。
+            __dshPurgeDrill && __dshPurgeDrill.CSS
+              ? h("style", { "data-dsh-purge-drill": "1" }, __dshPurgeDrill.CSS)
+              : null,
             h(
               Btn,
               {

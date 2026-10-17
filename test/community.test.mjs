@@ -289,3 +289,28 @@ test("release checksum failure stops before installation", async () => {
     f.close();
   }
 });
+
+test("Desktop POSIX launcher without executable permission runs through sh without changing app permissions", async () => {
+  const { installWithDsh } = await import("../lib/community.js"),
+    f = setup(),
+    previous = process.env.PURGE_DSH_CLI;
+  try {
+    const cli = path.join(f.home, "dsh");
+    fs.writeFileSync(
+      cli,
+      '#!/bin/sh\nprintf "%s\\n" "$@" > "$DSH_HOME/cli-args"\n',
+      { mode: 0o600 },
+    );
+    process.env.PURGE_DSH_CLI = cli;
+    await installWithDsh(f.candidate, f.manager);
+    assert.equal(
+      fs.readFileSync(path.join(f.home, "cli-args"), "utf8"),
+      ["plugin", "--profile", "desktop", "add", f.candidate, ""].join("\n"),
+    );
+    assert.equal(fs.statSync(cli).mode & 0o777, 0o600);
+  } finally {
+    if (previous === undefined) delete process.env.PURGE_DSH_CLI;
+    else process.env.PURGE_DSH_CLI = previous;
+    f.close();
+  }
+});

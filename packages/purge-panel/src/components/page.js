@@ -9,7 +9,7 @@ import { Btn, HelpTip } from "./primitives.js";
 import { PurgifySection } from "./settings-form.js";
 import { RulesSection } from "./rules.js";
 import { SkillsSection } from "./skills.js";
-import { CommunityMaintenance } from "./maintenance.js";
+import { CommunityMaintenance, StatusExtras } from "./maintenance.js";
 import { __dshPurgeDrill } from "../vendor/drill.js";
 import { readDrillAuth, setDock, requestDrill } from "../state/dock.js";
 
@@ -209,8 +209,9 @@ export function PurgePage() {
       h(
         "div",
         { hidden: tab !== "status", className: "dshpp-sec" },
-        h(CommunityMaintenance),
         h(PurgifySection, { page: "status", onStatus: mergeInfo }),
+        h(StatusExtras),
+        h(CommunityMaintenance),
       ),
       h(
         "div",

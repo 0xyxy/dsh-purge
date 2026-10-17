@@ -47,6 +47,11 @@ const responses = {
     patches: [],
     plugin_version: "1.1.71",
     has_backup: true,
+    compatibility: {
+      host_version: "0.2.1-rc.1",
+      level: "qualified",
+      message: "qualified fixture",
+    },
   },
   "/dsh-purge/update": { versions: [], channel: "stable" },
   "/dsh-purge/override": {
@@ -235,15 +240,10 @@ win.confirm = () => true;
   );
   assert(root.findAllByProps({ "aria-label": "社区版维护" }).length);
   assert(
-    root
-      .findAll((x) => x.props.role === "status")
-      .some((x) => JSON.stringify(x.children).includes("0.2.1-rc.1")),
-    "community compatibility note reports the host version from the backend",
+    JSON.stringify(tree.toJSON()).includes("0.2.1-rc.1"),
+    "the status strip reports the host version from the backend",
   );
-  assert(
-    button("刷新状态"),
-    "original status page renders in the community build",
-  );
+  assert(button("刷新"), "original status page renders in the community build");
   assert(
     JSON.stringify(tree.toJSON()).includes("Hooks 拦截"),
     "original hooks deny section renders in the community build",

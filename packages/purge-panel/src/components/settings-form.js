@@ -826,9 +826,34 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
       { hidden: page !== "status" },
       h(
         "div",
-        { className: "dshpp-head" },
-        h("h3", { className: "dshpp-title" }, t("purge.title")),
-        h("span", { className: "dshpp-pill" }, t("surface." + hostSurface)),
+        { className: "dshpp-actions" },
+        h(
+          Btn,
+          {
+            kind: "primary",
+            disabled: patchBusy || uninstallBusy || !overrideLoaded,
+            onClick: () => doAction("apply", "action.apply"),
+          },
+          patchBusy ? t("btn.apply.busy") : t("btn.apply"),
+        ),
+        h(
+          Btn,
+          {
+            kind: "danger",
+            disabled: patchBusy || uninstallBusy,
+            onClick: () => doAction("revert", "action.revert"),
+          },
+          t("btn.revert"),
+        ),
+        h(
+          Btn,
+          {
+            kind: "solid-danger",
+            disabled: patchBusy || uninstallBusy,
+            onClick: () => setAskUninstall(true),
+          },
+          uninstallBusy ? t("btn.uninstall.busy") : t("btn.uninstall"),
+        ),
         h(
           Btn,
           {
@@ -836,8 +861,10 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
             onClick: loadAll,
             disabled: patchBusy || uninstallBusy,
           },
-          "刷新状态",
+          "刷新",
         ),
+        h("span", { className: "dshpp-pill" }, t("surface." + hostSurface)),
+        noticeNode(notice),
       ),
       h(
         "div",
@@ -975,44 +1002,28 @@ export function PurgifySection({ page = "status", onStatus } = {}) {
         { className: "dshpp-bar", "aria-hidden": "true" },
         h("i", { style: { width: pct + "%" } }),
       ),
-      h(PatchGroups, { state: s }),
+      h(
+        "details",
+        { className: "dshpp-fold" },
+        h(
+          "summary",
+          null,
+          "补丁明细 ",
+          h(
+            "b",
+            null,
+            s && s.patches_total
+              ? `${applied}/${total} 已应用${tally.pending ? ` · ${tally.pending} 待应用` : ""}`
+              : "",
+          ),
+        ),
+        h(PatchGroups, { state: s }),
+      ),
       h(
         "details",
         null,
         h("summary", null, "高级选项"),
         h(HooksDenySection, { onSaved: loadAll }),
-      ),
-      h(
-        "div",
-        { className: "dshpp-row", style: { marginTop: 14 } },
-        h(
-          Btn,
-          {
-            kind: "primary",
-            disabled: patchBusy || uninstallBusy || !overrideLoaded,
-            onClick: () => doAction("apply", "action.apply"),
-          },
-          patchBusy ? t("btn.apply.busy") : t("btn.apply"),
-        ),
-        h(
-          Btn,
-          {
-            kind: "danger",
-            disabled: patchBusy || uninstallBusy,
-            onClick: () => doAction("revert", "action.revert"),
-          },
-          t("btn.revert"),
-        ),
-        h(
-          Btn,
-          {
-            kind: "solid-danger",
-            disabled: patchBusy || uninstallBusy,
-            onClick: () => setAskUninstall(true),
-          },
-          uninstallBusy ? t("btn.uninstall.busy") : t("btn.uninstall"),
-        ),
-        noticeNode(notice),
       ),
       askUninstall
         ? h(

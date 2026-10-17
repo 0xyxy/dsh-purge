@@ -265,11 +265,32 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-.dshpp-page .dshpp-btn-primary,
-.dshpp-page .dshpp-btn-solid-danger {
-  background: var(--dshpp-accent);
-  border-color: transparent;
+/* 主按钮：不要用 brand-primary 当底色——深色模式下它是高亮文字色，
+   直接铺成背景就成了"白底白字"的方块。这里用固定的实心绿 + 白字。 */
+.dshpp-page {
+  --dshpp-solid: #2f6b4f;
+  --dshpp-solid-hover: #3a8260;
+  --dshpp-solid-danger: #a63b3b;
+  --dshpp-solid-danger-hover: #bd4747;
+}
+.dshpp-page .dshpp-btn-primary {
+  background: var(--dshpp-solid);
+  border-color: var(--dshpp-solid);
   color: #fff;
+  font-weight: 600;
+}
+.dshpp-page .dshpp-btn-primary:hover:not(:disabled) {
+  background: var(--dshpp-solid-hover);
+  border-color: var(--dshpp-solid-hover);
+}
+.dshpp-page .dshpp-btn-solid-danger {
+  background: var(--dshpp-solid-danger);
+  border-color: var(--dshpp-solid-danger);
+  color: #fff;
+}
+.dshpp-page .dshpp-btn-solid-danger:hover:not(:disabled) {
+  background: var(--dshpp-solid-danger-hover);
+  border-color: var(--dshpp-solid-danger-hover);
 }
 .dshpp-page .dshpp-btn-danger {
   color: var(--dshpp-bad);
@@ -417,4 +438,158 @@
   color: var(--dshpp-warn);
   background: color-mix(in srgb, var(--dshpp-warn) 10%, transparent);
   font-size: 0.86em;
+}
+
+/* 操作条：最常用的「应用」固定在内容区顶部 */
+.dshpp-page .dshpp-actions {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0 12px;
+  margin: -4px 0 6px;
+  background: linear-gradient(
+    var(--dsw-alias-bg-base, canvas) 78%,
+    transparent
+  );
+  backdrop-filter: blur(2px);
+  border-bottom: 1px solid var(--dshpp-line);
+}
+.dshpp-page .dshpp-actions .dshpp-pill {
+  margin-left: auto;
+}
+
+/* 指标：三列紧凑 */
+.dshpp-page .dshpp-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin: 4px 0 2px;
+}
+.dshpp-page .dshpp-metric {
+  border: 1px solid var(--dshpp-line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--dshpp-bg-2);
+  min-width: 0;
+}
+.dshpp-page .dshpp-metric b {
+  display: block;
+  font-size: 1.05em;
+  font-weight: 600;
+  margin-bottom: 2px;
+  overflow-wrap: anywhere;
+}
+.dshpp-page .dshpp-metric span {
+  color: var(--dshpp-mute);
+  font-size: 0.82em;
+}
+
+/* 折叠块：补丁明细 / 维护 / 自检 */
+.dshpp-page .dshpp-fold,
+.dshpp-page .dshpp-fold-inline {
+  border: 1px solid var(--dshpp-line);
+  border-radius: 10px;
+  background: var(--dshpp-bg);
+  padding: 0 12px;
+}
+.dshpp-page .dshpp-fold > summary,
+.dshpp-page .dshpp-fold-inline > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-size: 0.92em;
+  color: var(--dshpp-fg);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dshpp-page .dshpp-fold > summary::-webkit-details-marker,
+.dshpp-page .dshpp-fold-inline > summary::-webkit-details-marker {
+  display: none;
+}
+.dshpp-page .dshpp-fold > summary::before,
+.dshpp-page .dshpp-fold-inline > summary::before {
+  content: "▸";
+  color: var(--dshpp-mute);
+  font-size: 0.9em;
+  transition: transform 0.12s ease;
+}
+.dshpp-page .dshpp-fold[open] > summary::before,
+.dshpp-page .dshpp-fold-inline[open] > summary::before {
+  transform: rotate(90deg);
+}
+.dshpp-page .dshpp-fold > summary b,
+.dshpp-page .dshpp-fold-inline > summary b {
+  color: var(--dshpp-mute);
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* 状态行（自检 / 强化段） */
+.dshpp-page .dshpp-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+.dshpp-page .dshpp-line + .dshpp-line {
+  border-top: 1px solid var(--dshpp-line);
+}
+.dshpp-page .dshpp-line-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92em;
+  min-width: 0;
+}
+.dshpp-page .dshpp-line-main b {
+  font-weight: 600;
+}
+.dshpp-page .dshpp-fold-inline {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.dshpp-page .dshpp-fold-inline > summary {
+  padding: 2px 0;
+  color: var(--dshpp-mute);
+  font-size: 0.86em;
+}
+.dshpp-page .dshpp-fold-inline[open] {
+  flex-basis: 100%;
+}
+
+/* 逐层自检：两列/多列网格，不再一条一行 */
+.dshpp-page .dshpp-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2px 14px;
+  padding: 6px 0 10px;
+}
+.dshpp-page .dshpp-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84em;
+  min-width: 0;
+  padding: 2px 0;
+}
+.dshpp-page .dshpp-check.is-bad {
+  color: var(--dshpp-bad);
+}
+.dshpp-page .dshpp-check-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.dshpp-page .dshpp-check-val {
+  margin-left: auto;
+  color: var(--dshpp-mute);
+  font-variant-numeric: tabular-nums;
 }

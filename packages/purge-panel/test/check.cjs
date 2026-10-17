@@ -183,14 +183,14 @@ const test = async () => {
   );
   await act(async () => btn("状态").props.onClick());
   await act(async () => {
-    btn("刷新状态").props.onClick();
+    btn("刷新").props.onClick();
     await new Promise((r) => setTimeout(r, 10));
   });
   assert.equal(area("提示词内容").props.value, "UNSAVED prompt");
   assert.equal(area("服务器名单").props.value, "unsaved.example.test");
   responses["/dsh-purge/status"].plugin_version = "2.0.0";
   await act(async () => {
-    btn("刷新状态").props.onClick();
+    btn("刷新").props.onClick();
     await new Promise((r) => setTimeout(r, 10));
   });
   assert(

@@ -254,7 +254,8 @@ export function maintenanceNotice(op, result) {
   return result.note || "维护操作已完成";
 }
 
-export function UpdatePreferences({ value, status = {}, onSaved }) {
+export function UpdatePreferences({ value, status = {}, onSaved, onOpenChannel }) {
+  const tr = useText();
   const [saving, setSaving] = useState(false),
     [error, setError] = useState("");
   const locked = useRef(false);
@@ -314,6 +315,21 @@ export function UpdatePreferences({ value, status = {}, onSaved }) {
           .sort((a, b) => a - b)
           .map((v) => h("option", { key: v, value: v }, `每 ${v} 小时`)),
       ),
+      // 「更新通道」与上面两个控件同行并排，尺寸与 select 一致：
+      // 它配置的正是这条更新检查走的代理/密钥，不该漂到标题最右端。
+      onOpenChannel
+        ? h(
+            Btn,
+            {
+              tiny: true,
+              className: "dshpp-updch-open",
+              disabled: saving,
+              onClick: () => onOpenChannel(),
+              title: tr("updch.title", "更新通道：代理与 GitHub 密钥"),
+            },
+            tr("updch.open", "更新通道"),
+          )
+        : null,
     ),
     h(
       "div",
@@ -634,23 +650,9 @@ export function CommunityMaintenance() {
   return h(
     "section",
     { className: "dshpp-panel", "aria-label": "社区版维护" },
-    // 标题右侧的「更新通道」：代理与 GitHub 密钥只影响插件的更新检查/下载。
-    h(
-      "div",
-      { className: "dshpp-updch-head" },
-      h("h3", null, "维护：更新与本机备份"),
-      h(
-        Btn,
-        {
-          tiny: true,
-          disabled: busy || !value,
-          onClick: () => setChannelOpen(true),
-          title: tr("updch.title", "更新通道：代理与 GitHub 密钥"),
-        },
-        tr("updch.open", "更新通道"),
-      ),
-    ),
-    // 通道现状一行摘要：代理是否直连、密钥是否已配置（密钥明文永不回显）。
+    h("h3", null, "维护：更新与本机备份"),
+    // 通道现状摘要：代理是否直连、密钥是否已配置（密钥明文永不回显）。
+    // 入口按钮不在这里，它跟「自动检查更新」放在同一行。
     value
       ? h(
           "p",
@@ -670,6 +672,7 @@ export function CommunityMaintenance() {
       status: value?.update_status,
       onSaved: (next) =>
         setValue((current) => ({ ...current, update_preferences: next })),
+      onOpenChannel: () => setChannelOpen(true),
     }),
     h(
       "div",

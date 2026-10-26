@@ -141,9 +141,16 @@ test("an uninstalled file: dependency is reported as skipped, not silently ignor
 const TOKEN = "ghp_" + "a".repeat(36);
 function tempHome() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "purge-env-"));
-  return { home, prefs: path.join(home, "dsh-purge/update-preferences.json"), done() { fs.rmSync(home, { recursive: true, force: true }); } };
+  return {
+    home,
+    prefs: path.join(home, "dsh-purge/update-preferences.json"),
+    channel: path.join(home, "dsh-purge/update-channel.json"),
+    done() { fs.rmSync(home, { recursive: true, force: true }); },
+  };
 }
 const readRaw = (f) => JSON.parse(fs.readFileSync(f.prefs, "utf8"));
+// 通道凭据单独落盘，密钥相关断言必须读这个文件。
+const readChannel = (f) => JSON.parse(fs.readFileSync(f.channel, "utf8"));
 
 test("updateEnv exposes only the channel proxy and token, never the host environment", () => {
   const f = tempHome(); try {
@@ -203,13 +210,13 @@ test("an empty githubToken keeps the stored secret; clearGithubToken is the only
     assert.equal(preferences(f.home).githubToken, TOKEN);
     assert.equal(savePreferences(f.home, { autoCheck: false }).githubToken, TOKEN, "an omitted field also keeps the secret");
     assert.equal(savePreferences(f.home, { githubToken: undefined }).githubToken, TOKEN);
-    assert.equal(readRaw(f).githubToken, TOKEN, "the untouched secret is still on disk");
+    assert.equal(readChannel(f).githubToken, TOKEN, "the untouched secret is still on disk");
     assert.equal(preferences(f.home).autoCheck, false, "the unrelated field still took effect");
 
     assert.equal(savePreferences(f.home, { clearGithubToken: true }).githubToken, "", "clearGithubToken wipes the secret");
     assert.equal(preferences(f.home).githubToken, "");
-    assert.equal(readRaw(f).githubToken, "", "the wipe is persisted, not just returned");
-    assert.equal("clearGithubToken" in readRaw(f), false, "the control flag itself is never persisted");
+    assert.equal(readChannel(f).githubToken, "", "the wipe is persisted, not just returned");
+    assert.equal("clearGithubToken" in readChannel(f), false, "the control flag itself is never persisted");
     assert.deepEqual(updateEnv(f.home), {}, "updateEnv stops sending the removed token");
 
     assert.equal(savePreferences(f.home, { clearGithubToken: false }).githubToken, "");
@@ -226,6 +233,6 @@ test("an empty githubToken keeps the stored secret; clearGithubToken is the only
       "a numeric clearGithubToken is rejected");
     assert.equal(updateEnv(f.home).GITHUB_TOKEN, TOKEN, "a rejected patch leaves the stored token untouched");
     assert.equal(savePreferences(f.home, { clearGithubToken: true }).githubToken, "");
-    assert.equal("clearGithubToken" in readRaw(f), false, "the control flag itself is never persisted");
+    assert.equal("clearGithubToken" in readChannel(f), false, "the control flag itself is never persisted");
   } finally { f.done(); }
 });

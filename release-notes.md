@@ -1,3 +1,40 @@
+# 1.6.62
+
+## 适配 0.2.1-rc.5 + 修 #107（未闭合 ChatML 开标签）
+
+### rc.5 已进已验证清单
+
+从官方 nightly 2026-10-29 的 `0.2.1-rc.5` 包里整棵取出宿主源码，对 **82 条**补丁跑
+`patchDrift`：`checked 82 / drifted 0`。桌面壳 5 条（#45/#46/#82/#83/#84）在
+`Resources/app` 布局下同样命中；`missing_file` 只有第三方目标（LiangShen、hooks），
+在没装它们的机器上本来就该缺。
+
+`QUALIFIED_HOST_VERSIONS` 增加 `0.2.1-rc.5`。**限制**：这是源码级零漂移 + 真实替换验证，
+运行时表现仍要在你更新后由 `selfcheck`/`diagnose` 确认；rc.5 本身是 nightly，不是稳定版。
+
+### #107：注入信封只有开标签
+
+`lib/identity.js` 的 `normalizeChatmlLayout` 一直保留 `<|im_start|>system:`，却从不补
+`<|im_end|>`；宿主 `@deepseek-ai` 树里这两个标签本来就是 0 处（完全不用 ChatML）。结果
+系统提示里出现「一条 system 消息开始、永不结束」，后面的官方段落全被读进这条消息里，
+与报告里的 `anchorApplied=false` 653/653、`policy=fallback` 一致。
+
+本版规则：**成对才保留，单边直接去掉**。`<project_instructions>` 的闭合逻辑不变。
+
+### 顺带纳入 PR #113 的 cookie 修复
+
+- **#91**：会话 cookie 名只按主机名派生（忽略随机端口），避免每次重启多一条
+  `dsh-auth-*`，攒到撑爆 16KB 请求头后本地服务回 431、应用打不开。
+- **#92**：把 host 子进程的 `--max-http-header-size` 放宽到 256KB，兜住已经攒下的旧
+  cookie（它们要 30 天才过期）。
+
+两条都只改宿主源码字符串，`optional` 目标，不动用户配置。
+
+## 验证
+
+`npm test` 397 通过 / 0 失败（新增 `test/chatml-envelope.test.mjs`）；rc.5 原始树
+82 条全量应用：61 applied / 7 already / 2 skipped / 12 missing（全部第三方目标）。
+
 # 1.6.61
 
 **已知限制：** GitHub 的 macOS、Windows、Linux 安装及运行时检查均通过；但 Windows 4090 的完整安装验收被 Defender 隔离旧版既有的 `skills/redteam/unauth-exploit.md` 阻断，不能视为该机器已验收通过。旧版与本版该文件 SHA256 一致。本次没有关闭防护、设置排除或删减技能；此问题继续保留。

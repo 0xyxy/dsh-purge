@@ -1,0 +1,3 @@
+name: 梁神模式
+description: 结论先行、先质疑前提的人格化模式（Thinking Disruption）：先拆掉需求里说不通的部分再动手；适合长任务、方案取舍、写作与需要判断力的场景。工具面沿用标准集，宿主拦截由 dsh-purge 补丁拆除。
+order: 30

@@ -51,7 +51,34 @@ test('real CONNECT tunnel validates TLS, scopes credentials and respects total t
     const upstream=net.connect(server.address().port,'127.0.0.1',()=>{socket.write('HTTP/1.1 200 Connection Established\r\n\r\n');if(head.length)upstream.write(head);socket.pipe(upstream).pipe(socket);});
     sockets.add(upstream);upstream.on('error',()=>socket.destroy());socket.on('error',()=>upstream.destroy());socket.on('close',()=>upstream.destroy());
   });
-  for(const s of [server,proxy]){s.on('connection',socket=>sockets.add(socket));await new Promise(resolve=>s.listen(0,'127.0.0.1',resolve));}
+  const socks=net.createServer(socket=>{
+    let buffer=Buffer.alloc(0),stage='greet';
+    const data=chunk=>{
+      buffer=Buffer.concat([buffer,chunk]);
+      while(true) {
+        if(stage==='greet'){
+          if(buffer.length<2 || buffer.length<2+buffer[1])return;
+          buffer=buffer.subarray(2+buffer[1]);socket.write(Buffer.from([5,2]));stage='auth';
+        }else if(stage==='auth'){
+          if(buffer.length<2 || buffer.length<3+buffer[1])return;
+          const u=buffer[1],p=buffer[2+u];if(buffer.length<3+u+p)return;
+          assert.equal(buffer.subarray(2,2+u).toString(),'user');
+          assert.equal(buffer.subarray(3+u,3+u+p).toString(),'fixture');
+          buffer=buffer.subarray(3+u+p);socket.write(Buffer.from([1,0]));stage='connect';
+        }else{
+          if(buffer.length<5 || buffer.length<7+buffer[4])return;
+          assert.equal(buffer[3],3);
+          buffer=buffer.subarray(7+buffer[4]);socket.off('data',data);
+          const upstream=net.connect(server.address().port,'127.0.0.1',()=>{
+            socket.write(Buffer.from([5,0,0,1,127,0,0,1,0,0]));
+            if(buffer.length)upstream.write(buffer);socket.pipe(upstream).pipe(socket);
+          });
+          sockets.add(upstream);upstream.on('error',()=>socket.destroy());socket.on('error',()=>upstream.destroy());socket.on('close',()=>upstream.destroy());return;
+        }
+      }
+    };socket.on('data',data);
+  });
+  for(const s of [server,proxy,socks]){s.on('connection',socket=>sockets.add(socket));await new Promise(resolve=>s.listen(0,'127.0.0.1',resolve));}
   try {
     const env={HTTPS_PROXY:`http://user:fixture@127.0.0.1:${proxy.address().port}`,GH_TOKEN:'test-token'};
     const base=`https://api.github.com:${server.address().port}`;
@@ -62,6 +89,15 @@ test('real CONNECT tunnel validates TLS, scopes credentials and respects total t
     assert(connects.every(r=>!r.headers.authorization && r.headers['proxy-authorization']==='Basic '+Buffer.from('user:fixture').toString('base64')));
     await assert.rejects(requestUpdate(`https://github.com:${server.address().port}/asset`,{env}),/网络连接失败/);
     await assert.rejects(requestUpdate(base+'/large',{env,maxBytes:2}),/过大/);
+    const socksEnv={PURGE_HTTPS_PROXY:`socks5h://user:fixture@127.0.0.1:${socks.address().port}`,GITHUB_TOKEN:'socks-token'};
+    const begin=requests.length;
+    assert.equal((await requestUpdate(base+'/redirect',{env:socksEnv})).body.toString(),'verified');
+    assert.equal(requests[begin].headers.authorization,'Bearer socks-token');
+    assert.equal(requests[begin+1].headers.authorization,undefined);
+    assert.equal(requests[begin].headers['proxy-authorization'],undefined);
+    await assert.rejects(requestUpdate(`https://github.com:${server.address().port}/asset`,{env:socksEnv}),/网络连接失败/);
+    await assert.rejects(requestUpdate(base+'/slow',{env:socksEnv,timeout:100}),/超时/);
+
     // Actual HTTPS -> CONNECT -> mirror byte stream -> official digest -> tar identity check.
     Object.assign(process.env,env,{PURGE_HTTPS_PROXY:env.HTTPS_PROXY,NO_PROXY:'',no_proxy:'',GITHUB_TOKEN:'test-token',PURGE_GH_MIRROR:'https://mirror.example/'});
     const offset=requests.length;
@@ -76,5 +112,5 @@ test('real CONNECT tunnel validates TLS, scopes credentials and respects total t
     assert.equal((await requestUpdate(base+'/stream',{env,timeout:1000})).body.toString(),'xxxxxx');
     await assert.rejects(requestUpdate(base+'/stream',{env,timeout:100}),/超时/);
     await assert.rejects(requestUpdate(base+'/slow',{env,timeout:100}),/超时/);
-  } finally {for(const socket of sockets)socket.destroy();await Promise.all([server,proxy].map(s=>new Promise(resolve=>s.close(resolve))));}
+  } finally {for(const socket of sockets)socket.destroy();await Promise.all([server,proxy,socks].map(s=>new Promise(resolve=>s.close(resolve))));}
 });

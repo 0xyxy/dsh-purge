@@ -1,3 +1,4 @@
+import { apiUrl } from "../api/client.js";
 // UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { useState, useEffect } from "../shared/react.js";
 import { __dshPurgeDrill } from "../vendor/drill.js";
@@ -37,7 +38,7 @@ export function writeDrillAuth(ok) {
   setDrillAuthLocal(ok);
   if (!ok) return;
   drillGrantPosting += 1;
-  fetch("/dsh-purge/drill-grant", {
+  fetch(apiUrl("/dsh-purge/drill-grant"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: "{}",
@@ -76,7 +77,7 @@ export function syncDrillGrant(attempt) {
     }
     drillSyncRetryTimer = null;
   }
-  fetch("/dsh-purge/drill-grant", { method: "GET" })
+  fetch(apiUrl("/dsh-purge/drill-grant"), { method: "GET" })
     .then((r) => r.json())
     .then((r) => {
       if (gen !== drillGrantGen) return;

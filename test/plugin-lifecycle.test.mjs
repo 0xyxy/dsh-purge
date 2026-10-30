@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -42,6 +43,17 @@ test("real Cordis late service, replacement and parent reload retain commands an
     await routes.get("/dsh-purge/status").handler({method:"GET",headers:{}},response);
     assert.equal(response.code,200);
     assert.equal(JSON.parse(response.body).ready,true);
+    // Both independently registered update handlers must use their own scoped
+    // settings reader; malformed channel config must never become direct traffic.
+    fs.mkdirSync(path.join(tmp,"dsh-purge"),{recursive:true});
+    fs.writeFileSync(path.join(tmp,"dsh-purge/update-channel.json"),"broken json");
+    for(const method of ["GET","POST"]) {
+      const req=Object.assign(Readable.from(["{}"]),{method,headers:{}});
+      const res={writeHead(code){this.code=code;},end(body){this.body=body;}};
+      await routes.get("/dsh-purge/update").handler(req,res);
+      assert.equal(res.code,500);assert.match(JSON.parse(res.body).error,/无法读取更新设置/);
+    }
+    fs.unlinkSync(path.join(tmp,"dsh-purge/update-channel.json"));
     await web.dispose();await tick();assert.equal(routes.size,0);
     web = root.plugin(Web);await web;await tick();
     assert(root.webServer.routes.has("/dsh-purge/status"));

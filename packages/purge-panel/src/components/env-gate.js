@@ -1,3 +1,4 @@
+import { apiUrl } from "../api/client.js";
 // Red-team "environment not ready" send gate, ported from
 // YuJunZhiXue/dsh-purge 1.1.71 (MIT). Original block: client.js 1.1.71
 // lines 8134-8346: fetchEnvAdaptStatus / fetchEnvAdaptStatusSync /
@@ -22,7 +23,7 @@ import {
 } from "../state/redteam-mode.js";
 
 export function fetchEnvAdaptStatus() {
-  return fetch("/redteam/api", {
+  return fetch(apiUrl("/redteam/api"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ op: "platformEnvAdaptStatus" }),
@@ -268,7 +269,7 @@ export function EnvAdaptSendGate() {
                   disabled: busy,
                   onClick: () => {
                     setBusy(true);
-                    fetch("/redteam/api", {
+                    fetch(apiUrl("/redteam/api"), {
                       method: "POST",
                       headers: { "content-type": "application/json" },
                       body: JSON.stringify({

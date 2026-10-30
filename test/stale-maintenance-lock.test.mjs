@@ -38,7 +38,7 @@ for(const [label,raw,io] of [
  const f=fixture(t);f.plant(raw,stale);assert.throws(()=>acquireMaintenanceLock(f.root,io),/已有维护操作/);assert.equal(fs.readFileSync(f.lock,'utf8'),raw);
 });
 test('metadata write failure releases gate and empty file without hiding disk failure',t=>{
- const f=fixture(t);const io=new Proxy(fs,{get(target,key){if(key==='writeFileSync')return (file,...args)=>{if(typeof file==='number')throw Object.assign(Error('disk full'),{code:'ENOSPC'});return fs.writeFileSync(file,...args);};return target[key];}});
+ const f=fixture(t);const io=new Proxy(fs,{get(target,key){if(key==='writeFileSync')return (file,...args)=>{if(String(file).endsWith('.json'))throw Object.assign(Error('disk full'),{code:'ENOSPC'});return fs.writeFileSync(file,...args);};return target[key];}});
  assert.throws(()=>acquireMaintenanceLock(f.root,{fs:io}),{code:'ENOSPC'});
  const g=acquireMaintenanceLock(f.root);g.release();
 });
@@ -61,7 +61,7 @@ test('lost ownership stops body completion and never removes replacement lock',a
 });
 test('an unchanged lock with read failure stops writes rather than assuming ownership',t=>{
  const f=fixture(t);let fail=false;const io=new Proxy(fs,{get(target,key){if(key==='readFileSync')return (file,...args)=>{if(fail&&file===f.lock)throw Object.assign(Error('AV'),{code:'EACCES'});return fs.readFileSync(file,...args);};return target[key];}});
- const g=acquireMaintenanceLock(f.root,{fs:io});fail=true;assert.throws(()=>g.check(),{code:'LOCK_LOST'});fail=false;g.release();
+ const g=acquireMaintenanceLock(f.root,{fs:io});fail=true;assert.throws(()=>g.check(),{code:'LOCK_UNREADABLE'});fail=false;g.release();
 });
 const moduleURL=new URL('../lib/maintenance-lock.js',import.meta.url).href;
 function child(code,root){const p=spawn(process.execPath,['--input-type=module','-e',code,root],{env:process.env,stdio:['ignore','pipe','pipe']});let err='';p.stderr.on('data',x=>err+=x);p.done=once(p,'exit').then(([status])=>{assert.equal(status,0,err);});return p;}
@@ -91,4 +91,63 @@ test('public cleanup and actual CLI cannot prune during maintenance', async t=>{
    assert.notEqual(result.status,0);assert.match(result.stderr+result.stdout,/已有维护操作/);
  });
  const result=await m.pruneLocked();assert.deepEqual(result.removed,[]);
+});
+
+test('published compatibility lock always contains complete metadata',t=>{
+ const f=fixture(t); let published=false;
+ const io=new Proxy(fs,{get(target,key){if(key==='linkSync')return (from,to)=>{
+   const owner=JSON.parse(fs.readFileSync(from,'utf8')); assert.equal(owner.pid,process.pid);
+   fs.linkSync(from,to); published=true; assert.equal(fs.readFileSync(to,'utf8'),fs.readFileSync(from,'utf8'));
+ };return target[key];}});
+ const g=acquireMaintenanceLock(f.root,{fs:io}); assert(published);g.check();g.release();
+});
+test('failed release retains exclusion and retries only its own released token',t=>{
+ const f=fixture(t);let blocked=true;
+ const io=new Proxy(fs,{get(target,key){if(key==='unlinkSync')return file=>{
+   if(blocked && file===f.lock)throw Object.assign(Error('scanner'),{code:'EBUSY'});fs.unlinkSync(file);
+ };return target[key];}});
+ const g=acquireMaintenanceLock(f.root,{fs:io});assert.equal(g.release().code,'EBUSY');
+ assert(fs.existsSync(path.join(f.root,'maintenance.guard')));
+ assert.throws(()=>acquireMaintenanceLock(f.root),{code:'MAINTENANCE_BUSY'});
+ blocked=false;const next=acquireMaintenanceLock(f.root);next.check();next.release();
+});
+test('transient lock read failure recovers; unknown old empty lock remains blocked',t=>{
+ const f=fixture(t);let reads=0;
+ const io=new Proxy(fs,{get(target,key){if(key==='readFileSync')return (file,...args)=>{
+   if(file===f.lock && reads++===0)throw Object.assign(Error('scanner'),{code:'EBUSY'});return fs.readFileSync(file,...args);
+ };return target[key];}});
+ const g=acquireMaintenanceLock(f.root,{fs:io});g.check();g.release();
+ f.plant('');assert.throws(()=>acquireMaintenanceLock(f.root),{code:'MAINTENANCE_BUSY'});
+});
+test('post-commit lock failure preserves checkpoint and reports warning without restore',async t=>{
+ const f=fixture(t);const profile=path.join(f.root,'profiles','web');fs.mkdirSync(profile,{recursive:true});fs.writeFileSync(path.join(profile,'package.json'),'{}');
+ const m=new Maintenance({home:f.root,profile,aiBase:''});let finished=false,pruned=false;
+ m.prune=()=>{pruned=true;return {errors:[]};};
+ const result=await m.locked(()=>{
+   fs.writeFileSync(path.join(m.base,'maintenance.lock'),'replacement');
+   return {ok:true,cleanup_warnings:m.finishCleanup({finish(){finished=true;}},'fixture')};
+ });
+ assert.equal(result.ok,true);assert(!finished);assert(!pruned);
+ assert(result.cleanup_warnings.some(w=>w.code==='LOCK_LOST'));
+ assert.equal(fs.readFileSync(path.join(m.base,'maintenance.lock'),'utf8'),'replacement');
+});
+
+test('real crash on either side of atomic compatibility publication is recoverable',async t=>{
+ for(const after of [false,true]) {
+  const f=fixture(t);
+  const p=child(`import fs from 'node:fs';import{acquireMaintenanceLock}from ${JSON.stringify(moduleURL)};const link=fs.linkSync;const io=new Proxy(fs,{get(target,key){if(key==='linkSync')return(...args)=>{if(${after})link(...args);fs.writeSync(1,'publication boundary\\n');process.kill(process.pid,'SIGKILL');};return target[key];}});acquireMaintenanceLock(process.argv[1],{fs:io});`,f.root);
+  await p.done.catch(()=>{});
+  if(after)assert.equal(JSON.parse(fs.readFileSync(f.lock,'utf8')).pid,p.pid);
+  else assert(!fs.existsSync(f.lock));
+  const next=acquireMaintenanceLock(f.root);next.check();next.release();
+ }
+});
+
+test('confirmed ownership loss does not cache a retry against future owners',t=>{
+ const f=fixture(t),g=acquireMaintenanceLock(f.root);
+ const gate=path.join(f.root,'maintenance.guard');
+ fs.unlinkSync(f.lock);for(const name of fs.readdirSync(gate))fs.unlinkSync(path.join(gate,name));fs.rmdirSync(gate);
+ const other=acquireMaintenanceLock(f.root);
+ assert.equal(g.release().code,'LOCK_LOST');other.check();other.release();
+ const next=acquireMaintenanceLock(f.root);next.check();next.release();
 });

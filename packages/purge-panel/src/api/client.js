@@ -39,9 +39,38 @@ export function hostText(t, key, surface) {
   return t(key);
 }
 
-export function apiUrl(p) {
+// The loaded plugin URL is the strongest evidence of the host mount point.
+// An unrelated/cross-origin <base> must never receive authenticated API calls.
+export function apiUrl(p, context = {}) {
   try {
-    return new URL(p, window.location.origin).toString();
+    const loc =
+      context.href || window.location.href || window.location.origin + "/";
+    const page = new URL(loc);
+    const module = new URL(
+      context.moduleUrl ||
+        (typeof __PURGE_MODULE_URL__ !== "undefined" && __PURGE_MODULE_URL__) ||
+        page.href,
+      page,
+    );
+    let base;
+    const marker = module.pathname.indexOf("/plugins/");
+    if (module.origin === page.origin && marker >= 0) {
+      base = new URL(module.pathname.slice(0, marker + 1), page);
+    } else {
+      const declared =
+        context.baseURI ||
+        (typeof document !== "undefined" && document.baseURI);
+      const candidate = declared && new URL(declared, page);
+      base = candidate && candidate.origin === page.origin ? candidate : page;
+      base = new URL(base.href);
+      // Host routes are client-side hash routes; a slashless mount is a directory.
+      if (!base.pathname.endsWith("/")) base.pathname += "/";
+    }
+    base.search = "";
+    base.hash = "";
+    if (typeof p !== "string" || !p.startsWith("/") || p.startsWith("//"))
+      return p;
+    return new URL(p.slice(1), base).toString();
   } catch {
     return p;
   }

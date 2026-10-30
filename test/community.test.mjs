@@ -608,3 +608,14 @@ test('rollback ownership loss never restores over a new writer', async () => {
     assert(f.manager.list().some(item=>item.id===backup.id));
   } finally { f.close(); }
 });
+
+test('missing CLI preflight stops before profile installation or checkpoint mutation',async()=>{
+ const f=setup();try {
+  const before=fs.readFileSync(path.join(f.profile,'package.json'));
+  f.manager.preflight=()=>{throw Error('fixture CLI unavailable');};
+  await assert.rejects(f.manager.install(f.candidate),/fixture CLI unavailable/);
+  assert.deepEqual(fs.readFileSync(path.join(f.profile,'package.json')),before);
+  assert.equal(f.installs.length,0);
+  assert(!fs.existsSync(path.join(f.manager.base,'install-recovery')));
+ } finally {fs.rmSync(f.home,{recursive:true,force:true});}
+});

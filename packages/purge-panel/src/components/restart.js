@@ -1,3 +1,4 @@
+import { apiUrl } from "../api/client.js";
 import * as rd from "react-dom";
 // UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h } from "../shared/react.js";
@@ -58,7 +59,7 @@ export function waitForRestart(setNotice, setBusy, t) {
   // 必须先看到旧进程掉线，再等新进程就绪；否则同进程立刻 200 会被当成「重启成功」又弹重启。
   let sawDown = false;
   const ping = () => {
-    fetch("/dsh-purge/status", {
+    fetch(apiUrl("/dsh-purge/status"), {
       cache: "no-store",
       credentials: "same-origin",
     })
@@ -109,7 +110,7 @@ export function restartDsh(setNotice, setBusy, t, surface) {
     if (sawDrop) return;
     stop("");
   }, 25000);
-  fetch("/dsh-purge/restart", {
+  fetch(apiUrl("/dsh-purge/restart"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: "{}",

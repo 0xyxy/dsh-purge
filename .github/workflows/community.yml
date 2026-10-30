@@ -138,6 +138,7 @@ jobs:
           gh release download v1.6.36 --repo kingcharleslzy-ai/dsh-purge --pattern dsh-purge-community-1.6.36.tgz --dir "$RUNNER_TEMP/purge-baseline"
           npm pack --ignore-scripts
           node scripts/check-npm-install-runtime.mjs "$RUNNER_TEMP/purge-baseline/dsh-purge-community-1.6.36.tgz" "dsh-purge-community-$(node -p 'require("./package.json").version').tgz"
+          PURGE_TEST_HOST="$PURGE_TEST_NPM_ROOT/node_modules/@deepseek-ai" node scripts/check-native-skills-runtime.mjs
           export PURGE_LINK_TEST_CLI="$PURGE_TEST_NPM_ROOT/node_modules/@deepseek-ai/dsh/lib/bin.js"
           export PURGE_LINK_TEST_PNPM="$PURGE_TEST_NPM_ROOT/node_modules/pnpm/bin/pnpm.cjs"
           engine="$(command -v node)"

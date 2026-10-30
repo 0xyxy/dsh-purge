@@ -1,3 +1,4 @@
+import { apiUrl } from "../api/client.js";
 import React from "react";
 // UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 
@@ -566,7 +567,7 @@ export const __dshPurgeDrill = (() => {
   };
 
   const api = (req) =>
-    fetch("/redteam/api", {
+    fetch(apiUrl("/redteam/api"), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(req),

@@ -430,3 +430,7 @@ Web 子路径请求按实际插件脚本路径定位挂载点，根路径和桌�
 - 真机探针 `test/expect-contract.test.mjs` 要求每个字面锚点在原始宿主（优先 `.dshpurge.bak`）里恰好出现一次；新增锚点必须收窄或声明 expect。
 - complete 模式注入段改为排在官方段之前（`[...dshPurgeSections, ...dshPurgeRest]`），旧宿主有专门迁移 pattern。
 - 审计口径：与上游 1.1.83 同名对比，72 条替换逐字一致，6 条为加强；上游独有的 #18/#19 是上下文保护（非闸），不启用。
+
+## DSH Store 提交与复检
+
+主插件申请必须使用 `GitHub repository: https://github.com/kingcharleslzy-ai/dsh-purge`、`Plugin path (optional): .`，不能因为表单提示根目录留空就省略。保留 `packages/purge-panel`；它不是本次安装目标。兼容信息从根 manifest 的 `dsh.compatibility` 读取，不把 README 范围或相邻版本推断写成精确 `compatible`。rc.4 和 alpha.2 尚为 unknown；rc.5 的作者声明依据与局限见 [DSH Store 说明](docs/DSH-STORE.md)。不得伪造固定 Commit 的 install/start/uninstall/rollback 证据，不为市场准入删功能或隐藏宿主维护能力。

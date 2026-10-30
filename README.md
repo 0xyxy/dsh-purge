@@ -4,14 +4,14 @@
 
 **让 AI 更专注地辅助你的学习与动手实验。**
 
-给 DeepSeek Harness 的自托管控件（俗称「破甲」插件）· 80 条宿主补丁 · 25 层状态自检 · 左侧栏整页设置
+给 DeepSeek Harness 的自托管控件（俗称「破甲」插件）· 82 条宿主补丁 · 25 层状态自检 · 左侧栏整页设置
 
 [![Release](https://img.shields.io/github/v/release/kingcharleslzy-ai/dsh-purge?label=release)](https://github.com/kingcharleslzy-ai/dsh-purge/releases)
 [![Checks](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml/badge.svg)](https://github.com/kingcharleslzy-ai/dsh-purge/actions/workflows/community.yml)
 
-当前版本 **1.6.62** · 适配 **DSH Desktop 0.2.1-rc.3**（rc.1 / rc.2 同样通过） · [English](docs/README.en.md)
+当前版本 **1.6.62** · 适配 **DSH Desktop 0.2.1-rc.5**（rc.1 / rc.2 / rc.3 同样通过） · [English](docs/README.en.md)
 
-1.6.61 修复维护锁和子路径部署，新增隔离的更新代理设置，并恢复原生技能目录发现。[发行说明](docs/releases/1.6.61.md) · [测试与边界](docs/maintenance-1.6.61.md) · [市场安装与迁移指南](docs/MARKET-MIGRATION.md)。
+1.6.62 适配 DSH 0.2.1-rc.5，修掉注入信封里未闭合的 ChatML 开标签，并加入会话 cookie 端口与请求头上限修复。[发行说明](docs/releases/1.6.62.md) · [测试与边界](docs/maintenance-1.6.62.md) · [市场安装与迁移指南](docs/MARKET-MIGRATION.md)。
 
 **原项目与作者**：基于 [小杨 / YuJunZhiXue 的 dsh-purge](https://github.com/YuJunZhiXue/dsh-purge) 独立维护。原仓库已恢复；保留原作者署名、版权与 MIT 许可证。社区版由本仓库维护，并非原作者官方发行。
 

@@ -8,7 +8,7 @@ A self-hosted add-on for DeepSeek Harness (known in the community as a 破甲 / 
 
 [![Release](https://img.shields.io/github/v/release/kingcharleslzy-ai/dsh-purge?label=release)](https://github.com/kingcharleslzy-ai/dsh-purge/releases)
 
-Current version 1.6.62 · targets **DSH Desktop 0.2.1-rc.2** (rc.1 also passes)
+Current version 1.6.62 · targets **DSH Desktop 0.2.1-rc.5** (rc.1 / rc.2 / rc.3 also pass)
 
 **Original project and author:** independently maintained from [dsh-purge by 小杨 / YuJunZhiXue](https://github.com/YuJunZhiXue/dsh-purge). The original repository is available again. Original attribution, copyright and the MIT license are retained; this community distribution is not an official upstream release.
 
@@ -76,7 +76,7 @@ Two separate preferences (check / install), default check-only every six hours. 
 
 ## Compatibility
 
-Plugin `dsh-purge-community` 1.6.62 · verified on DSH Desktop 0.2.1-rc.1 / rc.2 · Node ≥ 18.
+Plugin `dsh-purge-community` 1.6.62 · verified on DSH Desktop 0.2.1-rc.1 / rc.2 / rc.3 / rc.5 · Node ≥ 18.
 
 ## Troubleshooting
 

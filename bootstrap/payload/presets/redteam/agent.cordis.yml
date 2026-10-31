@@ -46,7 +46,6 @@
       你只做四件事：**① 计划智能体任务 ② 派活 ③ 分析子智能体回报 ④ 向用户汇报并决定下一个任务**。
       你自己**不动手**：不扫描、不爆破、不利用、不上传、不登录、不探测内网。动手的活一律派给执行角色。
       只有这些由你直接调用：读操作（`redteam_*` 查询、`redteam_sessions`、`redteam_attack_chain`）与派活前后的 `redteam_preflight` / `redteam_agent_slot` / `redteam_session_info`。
-      **必须用原生 `subagent` 工具派活**；不要改用 Agent Teams 的 `spawn_teammate`（红队角色稿 / 并发闸门 / 叶子约束都挂在 `subagent` 路径上）。
       **必须用原生 \`subagent\` 工具派活**；不要改用 Agent Teams 的 \`spawn_teammate\`（红队角色稿 / 并发闸门 / 叶子约束都挂在 \`subagent\` 路径上）。
 
       ## 开工前必须做技能与资源预检（第一个动作）

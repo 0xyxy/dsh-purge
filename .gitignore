@@ -34,3 +34,7 @@ default-prompt-inject.md
 *.asar.bak
 
 market-dist/
+
+# bootstrap 打包产物（pack-custom.mjs 生成）
+dist/
+bootstrap/install-layers.log

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { skillsApi } from "../src/api/client.js";
+import { skillsApi, apiUrl } from "../src/api/client.js";
 globalThis.window = { location: { origin: "http://fixture" } };
 let calls = [],
   responses = [];
@@ -37,3 +37,64 @@ for (const status of [404, 405]) {
 console.log(
   "PASS: only missing routes fall back; ambiguous writes are never retried",
 );
+
+for (const prefix of ["/", "/app/fn-deepseek-harness/"]) {
+  const href = "https://host.test:58983" + prefix + "?session=private#chat";
+  const moduleUrl =
+    "https://host.test:58983" +
+    prefix +
+    "plugins/dsh-purge-community/client.js?rev=1";
+  assert.equal(
+    apiUrl("/dsh-purge/status", { href, moduleUrl }),
+    "https://host.test:58983" + prefix + "dsh-purge/status",
+  );
+  assert.equal(
+    apiUrl("/redteam/api", { href, moduleUrl }),
+    "https://host.test:58983" + prefix + "redteam/api",
+  );
+  assert.equal(
+    apiUrl("/", { href, moduleUrl }),
+    "https://host.test:58983" + prefix,
+  );
+}
+assert.equal(
+  apiUrl("/dsh-purge/status", {
+    href: "https://host.test/app/dsh",
+    baseURI: "https://evil.test/",
+  }),
+  "https://host.test/app/dsh/dsh-purge/status",
+);
+assert.equal(
+  apiUrl("https://other.test/file", { href: "https://host.test/app/" }),
+  "https://other.test/file",
+);
+
+// Real local HTTP deployment under a prefix. The isolated child retains native fetch.
+const { createServer } = await import("node:http");
+const { spawn } = await import("node:child_process");
+const server = createServer((req, res) => {
+  res.setHeader("content-type", "application/json");
+  if (req.url === "/app/dsh/dsh-purge/skills")
+    res.end(JSON.stringify({ ok: true }));
+  else {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: "wrong mount" }));
+  }
+});
+await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+try {
+  const href = `http://127.0.0.1:${server.address().port}/app/dsh/`;
+  const code = `globalThis.window={location:{href:${JSON.stringify(href)}}};const {skillsApi}=await import(${JSON.stringify(new URL("../src/api/client.js", import.meta.url).href)});const result=await skillsApi('status');if(!result.ok)throw Error('not ok');`;
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["--input-type=module", "-e", code]);
+    let error = "";
+    child.stderr.on("data", (x) => (error += x));
+    child.on("error", reject);
+    child.on("exit", (status) =>
+      status === 0 ? resolve() : reject(Error(error)),
+    );
+  });
+} finally {
+  await new Promise((resolve) => server.close(resolve));
+}
+console.log("PASS: actual HTTP request succeeds behind a subpath mount");

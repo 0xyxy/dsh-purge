@@ -52,3 +52,31 @@ test('API and Atom failures remain visible, including when a cached list is used
   const cached=await listForkReleases();assert(cached.cached);assert.match(cached.degraded,/releases.atom/);
   const stale=await listForkReleases({fresh:true,services:unavailable});assert(stale.stale);assert.match(stale.degraded,/代理连接超时/);
 });
+
+test('concurrent update contexts keep independent credentials across awaits and redirects',async()=>{
+ const {withUpdateEnvironment}=await import('../lib/update-http.js');
+ const {setTimeout:pause}=await import('node:timers/promises');
+ const seen=[];
+ await Promise.all(['first','second'].map((token,i)=>withUpdateEnvironment({GITHUB_TOKEN:token},async()=>{
+  await pause(i?1:5);
+  await requestUpdate('https://api.github.com/repos/example/test',{fetch:async(url,options)=>{
+    seen.push(options.headers.authorization);
+    return new Response('ok',{status:200});
+  }});
+ })));
+ assert.deepEqual(seen.sort(),['Bearer first','Bearer second']);
+});
+
+test('SOCKS handshake rejects unoffered authentication, invalid versions, abort and oversized credentials',async()=>{
+ const net=await import('node:net');const {socksTunnel}=await import('../lib/update-socks.js');
+ for(const response of [[5,4],[4,0],[5,2]]) {
+  const sockets=[];const server=net.createServer(socket=>{sockets.push(socket);socket.once('data',()=>socket.end(Buffer.from(response)));});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try {await assert.rejects(socksTunnel(new URL(`socks5://127.0.0.1:${server.address().port}`),'api.github.com',443,new AbortController().signal),/认证方式/);}
+  finally {sockets.forEach(s=>s.destroy());await new Promise(resolve=>server.close(resolve));}
+ }
+ const aborted=new AbortController();aborted.abort();
+ await assert.rejects(socksTunnel(new URL('socks5://127.0.0.1:1'),'api.github.com',443,aborted.signal),/超时/);
+ await assert.rejects(socksTunnel(new URL('socks5://'+ 'a'.repeat(256)+':p@127.0.0.1:1'),'api.github.com',443,new AbortController().signal),/长度/);
+ await assert.rejects(socksTunnel(new URL('socks5://%zz:p@127.0.0.1:1'),'api.github.com',443,new AbortController().signal),/编码/);
+});

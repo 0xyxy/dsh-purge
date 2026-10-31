@@ -91,6 +91,8 @@ export const zh = {
   "metric.pendingShort": "待处理 {n}",
   "metric.unmatchedShort": "没对上 {n}",
   "metric.partialShort": "部分命中 {n}",
+  "metric.driftedShort": "锚点漂移 {n}",
+  "metric.disabledShort": "可选关闭 {n}",
   "metric.skipShort": "跳过 {n}",
   "metric.unlocated.count": "—",
   "metric.shim": "shim",
@@ -106,6 +108,8 @@ export const zh = {
   "status.unmatched": "没对上",
   "status.partial": "部分命中",
   "status.partialDetail": "（{done}/{total} 目标）",
+  "status.drifted": "锚点漂移",
+  "status.disabled": "可选关闭",
   "status.skipped": "跳过",
   "apply.hint":
     "点应用会打补丁并把当前默认提示词挂上，框里仍是插件旧默认时自动刷到加密槽，不必再点保存。只有你另写的稿才会按框落盘。待应用=原文还在。跳过=当前版本不需要或组件未安装。",
@@ -397,6 +401,27 @@ export const zh = {
   "continue.ready": "继续（还可 {left} 次）",
   "continue.limit": "已达继续上限",
   "continue.fail": "继续失败: {error}",
+  "updch.open": "更新通道",
+  "updch.title": "更新通道：代理与 GitHub 密钥",
+  "updch.scope":
+    "这里的代理与密钥只作用于本插件的更新检查与下载通道，不影响其它模型厂商的请求，也不写入宿主进程环境。留空继承已有更新代理环境。",
+  "updch.proxy": "代理地址",
+  "updch.proxy.ph": "socks5://127.0.0.1:60808",
+  "updch.proxy.hint":
+    "支持 http:// / https:// / socks5:// 前缀，例如 http://127.0.0.1:7890。留空继承已有更新代理环境。",
+  "updch.token": "GitHub 密钥",
+  "updch.token.ph": "可选：提高 GitHub API 额度，留空则不修改",
+  "updch.token.set": "本机已配置密钥。输入框始终为空，留空保存表示保持不变。",
+  "updch.token.unset": "本机尚未配置密钥。留空表示不配置。",
+  "updch.token.clear": "清除已保存的密钥",
+  "updch.save": "保存",
+  "updch.saving": "保存中…",
+  "updch.cancel": "取消",
+  "updch.saved": "更新通道已保存，下一次检查更新即生效。",
+  "updch.state.proxy": "更新通道代理：",
+  "updch.state.direct": "更新通道：继承环境或系统代理",
+  "updch.state.token.on": "GitHub 密钥已配置",
+  "updch.state.token.off": "未配置 GitHub 密钥",
 };
 
 export const en = {
@@ -486,6 +511,8 @@ export const en = {
   "metric.pendingShort": "Pending {n}",
   "metric.unmatchedShort": "No match {n}",
   "metric.partialShort": "Partial {n}",
+  "metric.driftedShort": "Drifted {n}",
+  "metric.disabledShort": "Opt-in off {n}",
   "metric.skipShort": "Skipped {n}",
   "metric.unlocated.count": "—",
   "metric.shim": "shim",
@@ -501,6 +528,8 @@ export const en = {
   "status.unmatched": "No match",
   "status.partial": "Partial",
   "status.partialDetail": " ({done}/{total} targets)",
+  "status.drifted": "Drifted",
+  "status.disabled": "Opt-in off",
   "status.skipped": "Skipped",
   "apply.hint":
     "Apply writes patches and hangs the current default prompt. A stale plugin default in the box is refreshed from the sealed slot; a separate save is unnecessary. Only a prompt you wrote yourself is kept from the box. Pending = original text still present. Skipped = not needed for this version or the component is not installed.",
@@ -810,4 +839,29 @@ export const en = {
   "continue.ready": "Continue ({left} left)",
   "continue.limit": "Continue limit reached",
   "continue.fail": "Continue failed: {error}",
+  "updch.open": "Update channel",
+  "updch.title": "Update channel: proxy and GitHub token",
+  "updch.scope":
+    "These settings apply only to this plugin's update check and download channel. They do not affect requests to any model provider and are never written into the host process environment. Leave blank to inherit the existing update proxy environment.",
+  "updch.proxy": "Proxy URL",
+  "updch.proxy.ph": "socks5://127.0.0.1:60808",
+  "updch.proxy.hint":
+    "Accepts http://, https:// and socks5:// prefixes, e.g. http://127.0.0.1:7890. Leave blank to inherit the existing update proxy environment.",
+  "updch.token": "GitHub token",
+  "updch.token.ph":
+    "Optional: raises the GitHub API quota. Leave blank to keep it unchanged",
+  "updch.token.set":
+    "A token is configured on this machine. The field always starts empty; saving it empty keeps the current token.",
+  "updch.token.unset":
+    "No token is configured on this machine. Leaving it blank keeps it unset.",
+  "updch.token.clear": "Clear the saved token",
+  "updch.save": "Save",
+  "updch.saving": "Saving…",
+  "updch.cancel": "Cancel",
+  "updch.saved":
+    "Update channel saved. It takes effect on the next update check.",
+  "updch.state.proxy": "Update channel proxy: ",
+  "updch.state.direct": "Update channel: inherited environment or system proxy",
+  "updch.state.token.on": "GitHub token configured",
+  "updch.state.token.off": "No GitHub token configured",
 };

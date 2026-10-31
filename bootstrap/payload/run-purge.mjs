@@ -108,6 +108,37 @@ log('tally =', JSON.stringify(tally));
 const hard = report.filter((r) => !['applied', 'already', 'na', 'skipped'].includes(r.status));
 for (const r of hard) log(`  !! #${r.patch_id} ${r.name} → ${r.status}`);
 if (hard.length) log('提示：missing_file 多为该版本不存在 hooks/额外 preset，属无对象');
+// 结构化 apply 报告：安装器/人都能用它判定，而不是靠抓 stdout 文本。
+try {
+  const reportDir = path.join(DSH_HOME, 'dsh-purge-community');
+  fs.mkdirSync(reportDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(reportDir, 'last-apply-report.json'),
+    JSON.stringify(
+      {
+        at: new Date().toISOString(),
+        host: exe,
+        total: core.ALL_PATCHES.length,
+        tally,
+        hard: hard.map((r) => ({ id: r.patch_id, name: r.name, status: r.status })),
+      },
+      null,
+      2,
+    ) + '\n',
+    'utf8',
+  );
+  log('apply 报告 →', path.join(reportDir, 'last-apply-report.json'));
+} catch (e) {
+  log('apply 报告写入失败:', e.message);
+}
+
+// 硬失败（drifted / partial / unmatched / hit_mismatch / unreadable）不能继续换包：
+// 换完包宿主就从这个"补丁没打全"的目录启动，用户看到的是"装好了但没生效"。
+if (hard.length && !flag('--force-swap')) {
+  log(`存在 ${hard.length} 条硬失败，停止换包。修好锚点后重跑；确要带伤继续用 --force-swap。`);
+  log(JSON.stringify({ hard_failures: hard.map((r) => ({ id: r.patch_id, name: r.name, status: r.status })) }, null, 2));
+  process.exit(2);
+}
 
 // ── 3. shim ─────────────────────────────────────────────────────────────────
 const shimDir = path.join(resources, 'runtime', 'cli', 'bin');

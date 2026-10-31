@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { ALL_PATCHES } from "../lib/core.js";
+import { ALL_PATCHES, patchEnabled } from "../lib/core.js";
 
 const GATE_FINGERPRINTS = {
   5: "13e205e4c8f319e3",
@@ -60,8 +60,13 @@ test("all 25 bypass gates exist with unchanged semantics", () => {
   assert.deepEqual(problems, [], problems.join("; "));
 });
 
-test("quality-reducing patches stay removed", () => {
-  const ids = ALL_PATCHES.map((p) => p.id);
-  assert(!ids.includes(18), "repeat-tool reminder must not be disabled again");
-  assert(!ids.includes(19), "tool-result pruning must not be disabled again");
+test("quality-reducing patches stay opt-in and off by default", () => {
+  // #18/#19 关闭的是上下文保护（重复调用提醒、工具结果修剪），不是门禁。
+  // 它们以 disabledByDefault 形态存在：能显式打开，但默认绝不写入宿主。
+  for (const id of [18, 19]) {
+    const patch = ALL_PATCHES.find((p) => p.id === id);
+    assert.ok(patch, `#${id} should exist as an opt-in patch`);
+    assert.equal(patch.disabledByDefault, true, `#${id} must stay off by default`);
+    assert.equal(patchEnabled(patch, []), false, `#${id} must not apply without an explicit opt-in`);
+  }
 });

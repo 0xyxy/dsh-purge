@@ -114,6 +114,31 @@ if (LEGACY[op]) {
     } else {
       throw Error("用法：purge-community reanchor list | show <id> | apply <id> [--index n] [--lines a-b] [--yes] | clear <id>");
     }
+  } else if (op === "patches") {
+    const sub = (argument || "list").toLowerCase();
+    const current = readTuning(home).extraPatches || [];
+    const ids = String(argument2 || "").split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0);
+    const optIn = (await import("../lib/core.js")).ALL_PATCHES.filter((p) => p.disabledByDefault).map((p) => p.id);
+    if (sub === "enable" || sub === "disable") {
+      if (!ids.length) throw Error(`用法：purge-community patches ${sub} ${optIn.join(",") || "<id,id>"}`);
+      const known = new Set(optIn);
+      const unknown = ids.filter((id) => !known.has(id));
+      if (unknown.length) throw Error(`只有默认关闭的补丁可以手动开关：${[...known].join(",")}（未知：${unknown.join(",")}）`);
+      const next = sub === "enable"
+        ? [...new Set([...current, ...ids])].sort((a, b) => a - b)
+        : current.filter((id) => !ids.includes(id));
+      const saved = writeTuning({ extraPatches: next }, home);
+      logAudit("patches_setting", { action: sub, ids: ids.join(","), effective: saved.extraPatches.join(",") }, home);
+      result = { ok: true, extraPatches: saved.extraPatches, restart_required: false, hint: sub === "enable" ? "点一次「应用」写入宿主，然后退出重开" : "关闭只影响以后的「应用」；要从宿主真正移除，点一次「还原」" };
+    } else {
+      result = {
+        ok: true,
+        optIn,
+        extraPatches: current,
+        hint: "purge-community patches enable 18,19 | disable 18",
+        note: "默认关闭：开启会取消重复调用提醒与工具结果修剪，长会话上下文会变大",
+      };
+    }
   } else if (op === "retry") {
     const sub = (argument || "status").toLowerCase();
     if (sub === "on" || sub === "off") {
@@ -218,14 +243,17 @@ if (LEGACY[op]) {
       : {host:"",state:"unknown",checked:0,drifted:[],optionalDrift:[],chained:[],missing:[],
           note:"未定位当前实例；请明确 DSH_BASE 或 PURGE_DSH_CLI，不扫描其他安装"};
     result = { name: "Purge Community", package: PACKAGE, compatibility: compatibility(target), ...drift };
-  } else if (op === "status")
+  } else if (op === "status") {
+    const target = diagnosticHost();
     result = {
       name: "Purge Community",
       package: PACKAGE,
-      compatibility: compatibility(aiBase),
+      compatibility: compatibility(target),
+      host_selection: target ? "explicit-or-running" : "unresolved",
+      ...(target ? {} : { hint: "未取得当前实例入口；请指定 DSH_BASE / PURGE_DSH_CLI，或查看正在运行宿主的面板诊断。这不是插件未安装的证明。" }),
       backups: (() => { try { return maintenance().list(); } catch { return []; } })(),
     };
-  else if (op === "backup") result = await maintenance().backup("cli");
+  } else if (op === "backup") result = await maintenance().backup("cli");
   else if (op === "prune") result = await maintenance().pruneLocked();
   else if (op === "usage") result = maintenance().usage();
   else if (op === "rollback") result = await maintenance().rollback(argument);
@@ -237,7 +265,7 @@ if (LEGACY[op]) {
     });
   } else
     throw Error(
-      "用法：purge-community status | host-status | diagnose | selfcheck [--json] | boost on|off | rewind on|off | probe [new] | audit [--limit n] | preset [status|install] | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
+      "用法：purge-community status | host-status | diagnose | selfcheck [--json] | boost on|off | rewind on|off | patches [list|enable ids|disable ids] | probe [new] | audit [--limit n] | preset [status|install] | backup [prune|usage] | rollback <备份ID> | migrate <tgz> | apply | revert | uninstall | edit",
     );
   console.log(JSON.stringify(result, null, 2));
 } catch (e) {

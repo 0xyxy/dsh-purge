@@ -1,3 +1,200 @@
+# 1.6.67
+
+## 修复内容
+
+- Windows 更新代理探测优先使用只读 `reg.exe`，必要时回退到 UTF-8 PowerShell，避免每次都依赖 PowerShell 冷启动。探测失败标明 HTTP 尚未发送，不再笼统误报 GitHub API 不可用，也不会静默改成直连。
+- 瞬时连接重置等网络错误最多重试两次，共用原来的请求超时和重定向预算。HTTP、认证、证书、文件大小、来源和 SHA256 错误继续明确报出。
+- 修复 Windows 更新凭据文件继承普通 Users 读取权限的问题：先创建受保护的暂存目录和文件，再写入凭据、原子替换；旧文件首次读取时收紧权限且保持内容不变。覆盖失败保留旧文件。
+- 兼容从 PowerShell 7 启动的进程：Windows PowerShell 5.1 助手仅加载自身的系统模块，避免错误继承模块路径导致 Get-Acl 加载失败；不修改父进程或系统环境。
+- 密钥不进入 PowerShell 命令参数、环境变量或日志；损坏 JSON 的诊断也不再输出凭据原文。保持空密钥不覆盖、显式清除才删除及行为偏好单独存储的语义。
+
+## 实测与边界
+
+- Mac 与 Windows 11 4090 的实际公开 GitHub 发行信息请求均返回 HTTP 200；Windows 三次只读注册表探测约 9–11 ms，PowerShell 备用读取结果一致。
+- 两平台隔离 Electron 44.7.0 验证真实 HTTPS / CONNECT / SOCKS、连接重置及半途断流、总超时、token 跨主机隔离和 SHA256 校验。Windows 专项 38 项全部通过；Mac 对应 33 项通过、5 项 Windows 专用测试明确跳过。
+- Windows 实际验证宽松父目录下的 ACL、新建/覆盖/旧文件迁移、只读目标、真实文件占用及释放后的恢复。凭据均为临时测试假值。
+- CI 与发行流程加入同一套 Electron 更新通道测试，发行包继续经过三平台安装器及回归检查。
+
+此版本仅修改通用更新通道和凭据保护，不变更宿主补丁、提示词或自动更新偏好；本次测试不改维护者正式 DSH 设置、代理或防护，也不自动重启。ACL 不等于加密，不能防止管理员或同一用户进程读取。
+
+[#122](https://github.com/kingcharleslzy-ai/dsh-purge/issues/122) 暂留待确认：维护者实机为 Windows 11，尚需报告者在 Windows 10 19041 / 原 Clash TUN fakeIP 环境确认修复效果。[验证与维护说明](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/update-channel-122.md)
+
+# 1.6.66
+
+## 修复内容
+
+- 修复部分 Electron 桌面壳仅以 `--updated` 启动时，面板无法定位当前宿主的问题。只读诊断限制在当前进程、经包身份验证的资源目录内；安装和写入目标选择不变。
+- 使用 Electron 的实际应用入口证据。未知、读取失败或跨实例时，不再错误显示「换包完成」；真实缺失组件继续报出。
+- Windows 换包不再把备份冲突、权限等所有移动失败都当成「等待解锁」。共享/锁冲突继续等待，其余失败显示原始原因及错误码，保留原归档与已有备份。
+- 维护页与 CLI 的宿主版本诊断使用同一定位依据。独立 CLI 未指定实例时给出明确说明，不把未定位当成插件未安装。
+
+## 验证与范围
+
+- PR #121 的 GitHub 检查全部通过，包括 Mac、Windows、Linux 安装和官方 npm 宿主升级、回滚与失败恢复。
+- 本机回归：409 项通过、13 项平台/可选条件跳过；界面测试 26 项通过。
+- Mac 与 Windows 11 的隔离 Electron 44.7.0 实测：仅带 `--updated` 的桌面壳能识别自身宿主及实际入口；安装器目标选择不变。
+- Windows 真实文件占用返回错误 32，释放后正常换包；备份目标已存在返回错误 183，明确失败且保留两个文件。换包助手在启动器退出后仍能继续等待和完成。
+- 提示词、设置、既有功能及更新偏好保持不变；本次不安装到维护者的正式 DSH，也不自动重启。
+
+#118 保持打开：已复现并修复的是错误分类问题，不能据此认定报告者的具体卡住原因。仍需其换包状态、错误详情和助手日志。#119 的修复限于宿主诊断，不等于 #102 所提 NEXT 桌面发行版已经完整兼容。
+
+[PR #121](https://github.com/kingcharleslzy-ai/dsh-purge/pull/121) · [验证与边界](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/host-diagnostics-118-119.md)
+
+# 1.6.65
+
+## #18/#19 变成「默认关、可显式开启」
+
+上游 1.1.83 里这两条不是破甲闸门，而是**关掉上下文保护**。现在它们以 `disabledByDefault` 形态回到补丁表：默认绝不写入宿主，只有显式开启才会打。
+
+```sh
+purge-community patches                  # 看当前 opt-in 状态
+purge-community patches enable 18,19     # 打开（然后点一次「应用」）
+purge-community patches disable 19       # 关掉
+```
+
+**开启的收益**
+
+- #18：重复调用同一个工具时不再插入提醒，长链路工具循环的提示词更干净；
+- #19：工具结果不再在 8192 字符处被修剪，模型能看到完整输出（大文件、长日志、完整 diff）。
+
+**开启的代价**
+
+- 没有修剪后，工具输出会原样留在上下文里：一次 10 万字符的读取会一直占着窗口，长会话更快触顶、更贵、更容易答非所问；
+- 重复调用没有提醒，模型可能在同一处反复试错而没人提示它换策略；
+- 这两条都不解锁任何被拦的操作，只改变上下文管理。
+
+**默认策略**：保持关闭，除非你明确需要"完整工具输出 + 不打断"的场景（例如一次性分析一个超大文件），用完再关掉。
+
+## 实现
+
+- `lib/core.js` 增加 `disabledByDefault` 与 `patchEnabled()`；`applyPatches`、`patchStatus`、`patchDrift` 都识别 `disabled`，自检把它算作"明确不适用"，不会因为关着而报红；
+- `tuning.json` 新增 `extraPatches`（去重、排序、过滤非法值），CLI 写盘并记 `patches_setting` 审计；
+- 面板状态新增「可选关闭」；
+- `test/opt-in-patches.test.mjs`：默认不写、开启后写入、状态翻转、tuning 去重。
+
+`npm test` 407 通过 / 0 失败。
+
+# 1.6.64
+
+## #188 的 expect 命中数契约（原问题：补丁可能悄悄多改一处）
+
+`applyReplacementsToText` 现在支持 `{ pattern, replace, expect }`：声明命中数后，实际命中数与声明不符就**整条拒写**，并回传 `hitMismatch { patch_id, expected, actual, file }`。0 次命中也算不符——`expect: 1` 的含义是「这里必须有一处」。
+
+为什么需要：`split/join` 是无上限全量替换，官方把同一段代码复制成两份时会把不相干的那处一起改掉；而正则分支以前完全不做数量检查。现在正则也走同一契约。
+
+应用路径上，命中不符会被记为 `hit_mismatch:期望!=实际` 并计入未打上，不会写入半成品。
+
+新增 `test/expect-contract.test.mjs`：字面量、正则、未声明时保持 replace-all、以及一条**真机探针**——对每个字面锚点在原始宿主（优先 `.dshpurge.bak`）里统计出现次数，>1 直接失败，逼迫以后新增锚点时要么收窄、要么声明 expect。
+
+## complete 模式：注入段排到官方段之前
+
+上游 1.1.83 的顺序语义已对齐：complete 预设重建 sections 时使用 `[...dshPurgeSections, ...dshPurgeRest]`。旧版写进宿主的 `[...dshPurgeRest, ...dshPurgeSections]` 有单独迁移 pattern，点一次「应用」即可升级，不会重写未打过补丁的原文。
+
+## 能力审计（真机 0.2.1-rc.5）
+
+- **代码层 45/45 全打上**；提示词层 22 条 applied，未打的是 #76（预设无需处理）、#71/#28（LiangShen 未装）、#80（minimal 变体）；
+- 工具层 4 条 applied，未打的是 #30/#31/#64/#65（hooks 未装）；
+- 82 条里与上游同名同义的 72 条替换文本**逐字一致**；6 条差异经核对都是我方加强（多一条历史迁移、或 rc 专属修正），没有被削弱；
+- 上游独有的是 #18/#19（关掉重复调用提醒与工具结果修剪）与 #85/#86（插话语义，已由 #90 合并实现）。**#18/#19 不是闸**：它们删除的是上下文保护，开了会让长会话把工具输出全塞进上下文；本 fork 继续不启用，需要时可单独加回。
+
+`npm test` 403 通过 / 0 失败。
+
+# 1.6.63
+
+## 从上游 1.1.83 取回的通用修复：补丁「静默失效」不再算绿
+
+原作者恢复维护后连发 1.1.78–1.1.83。逐条比对后，只取通用且适合本 fork 的部分。
+
+### 采纳：#188 的漂移判定（通用部分）
+
+以前当目标文件存在、marker 不在、所有锚点都不命中时，状态是 `skipped`——被当成软成功，
+状态页全绿。官方一次改版就能让补丁悄悄失效而没人发现。
+
+现在：
+
+- 新增 `drifted` 状态：文件在、锚点全不中 → 漂移，`patchStatusReady("drifted") === false`，
+  面板显示「锚点漂移」，自检计入异常；
+- 两类例外仍判 `skipped`：**自标记补丁**（pattern 本身就是 `[dsh-purge]` 痕迹，找不到＝没加过）
+  与 `silentWhenMissing`（#76 用户预设里本来就没有官方身份行）；
+- `ensureHostClean` 不再把 `pattern_not_found` 从阻断项里过滤掉：没打上就是没打上，
+  不再带着半打状态继续重启；
+- `fileOptional` 的目标即使漂移也不牵连整条补丁（它们在新版宿主里已不承载该行为）。
+
+### 未采纳，以及原因
+
+| 上游改动 | 不采纳原因 |
+|---|---|
+| #174 DSH NEXT 识别 | 第三方壳家族，需要独立宿主适配（#98 / PR #102） |
+| #180/#185 allowBuilds、pnpm 11/12 修复 | 本 fork 走 `dsh plugin add`，不写 `pnpm-workspace.yaml`，无此面 |
+| #191 `cordis.patch.yml` 为 `[]` 时替换 | 同上：本 fork 不自动追加 insert 行 |
+| 子代理沿父会话读预设 | 与本 fork #53 的既定契约冲突：**子代理按自己的预设判断**，已有测试锁定 |
+| #108 清 `selectedDefault=redteam` | 本 fork 没有 redteam 预设，也不改用户默认选择 |
+| #170 zip 目录条目 | 本 fork 已按 `endsWith("/")` 建目录，无需再取 |
+
+公网门禁类改动依旧一律不取。
+
+## 验证
+
+`npm test` 399 通过 / 0 失败（新增 `test/drift-status.test.mjs`）；真机 0.2.1-rc.5：
+74 applied / 6 na（第三方未装）/ 2 skipped（#76、#80），`diagnose` 零漂移。
+
+# 1.6.62
+
+## 适配 0.2.1-rc.5 + 修 #107（未闭合 ChatML 开标签）
+
+### rc.5 已进已验证清单
+
+从官方 nightly 2026-10-29 的 `0.2.1-rc.5` 包里整棵取出宿主源码，对 **82 条**补丁跑
+`patchDrift`：`checked 82 / drifted 0`。桌面壳 5 条（#45/#46/#82/#83/#84）在
+`Resources/app` 布局下同样命中；`missing_file` 只有第三方目标（LiangShen、hooks），
+在没装它们的机器上本来就该缺。
+
+`QUALIFIED_HOST_VERSIONS` 增加 `0.2.1-rc.5`。**限制**：这是源码级零漂移 + 真实替换验证，
+运行时表现仍要在你更新后由 `selfcheck`/`diagnose` 确认；rc.5 本身是 nightly，不是稳定版。
+
+### #107：注入信封只有开标签
+
+`lib/identity.js` 的 `normalizeChatmlLayout` 一直保留 `<|im_start|>system:`，却从不补
+`<|im_end|>`；宿主 `@deepseek-ai` 树里这两个标签本来就是 0 处（完全不用 ChatML）。结果
+系统提示里出现「一条 system 消息开始、永不结束」，后面的官方段落全被读进这条消息里，
+与报告里的 `anchorApplied=false` 653/653、`policy=fallback` 一致。
+
+本版规则：**成对才保留，单边直接去掉**。`<project_instructions>` 的闭合逻辑不变。
+
+### 顺带纳入 PR #113 的 cookie 修复
+
+- **#91**：会话 cookie 名只按主机名派生（忽略随机端口），避免每次重启多一条
+  `dsh-auth-*`，攒到撑爆 16KB 请求头后本地服务回 431、应用打不开。
+- **#92**：把 host 子进程的 `--max-http-header-size` 放宽到 256KB，兜住已经攒下的旧
+  cookie（它们要 30 天才过期）。
+
+两条都只改宿主源码字符串，`optional` 目标，不动用户配置。
+
+## 验证
+
+`npm test` 397 通过 / 0 失败（新增 `test/chatml-envelope.test.mjs`）；rc.5 原始树
+82 条全量应用：61 applied / 7 already / 2 skipped / 12 missing（全部第三方目标）。
+
+# 1.6.61
+
+**已知限制：** GitHub 的 macOS、Windows、Linux 安装及运行时检查均通过；但 Windows 4090 的完整安装验收被 Defender 隔离旧版既有的 `skills/redteam/unauth-exploit.md` 阻断，不能视为该机器已验收通过。旧版与本版该文件 SHA256 一致。本次没有关闭防护、设置排除或删减技能；此问题继续保留。
+
+本次集中修复维护锁、Web 子路径请求和更新通道，并恢复内置预设的原生技能目录发现。
+
+- **#92**：完整锁元数据原子发布；释放失败保留互斥门并允许原操作重试；区分归属变化与读取失败。安装提交后的清理错误保留现场并明确告警，不再触发错误回滚。
+- **#106**：面板请求遵循实际部署子路径，避免状态、设置及其他接口错误请求到站点根目录。
+- **PR #99**：加入仅用于更新的 SOCKS5/HTTP(S) 代理与 GitHub token 设置；保留已有环境代理，隔离并发实例凭据，隐藏公开状态中的认证信息，继续校验 TLS、来源及 SHA256。
+- **PR #103**：恢复用户、项目和 bundled 技能目录发现；不覆盖用户修改过的预设，不忽略技能自身的调用限制。
+- 安装前提前定位 CLI；保留提示词、设置与现有功能，不自动应用宿主补丁或重启。
+
+感谢 Minggle 的更新通道贡献、Steooenwolf-666 / hans 的技能发现贡献，以及 Minervaowl7 的锁问题分析。
+
+**未纳入**：#95 现场资源损坏原因、#89 换包助手问题、PR #102 第三方桌面换包和 PR #113 Cookie/header 修改。它们继续保持开放，不将未验证宿主标记为已兼容。
+
+测试和恢复边界见 [维护记录](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-1.6.61.md)。
+
+---
+
 # 1.6.60
 
 修复缺失目标文件导致的异常中断，以及异常退出后遗留维护锁阻塞备份、安装和回滚的问题。感谢 Minervaowl7 提交 PR #88，以及 ShiTan-677 提供 macOS 复核证据。

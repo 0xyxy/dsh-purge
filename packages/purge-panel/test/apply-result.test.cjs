@@ -168,7 +168,9 @@ for (const [name, result, expected] of [
       assert.match(notice[0].children.join(""), expected);
       assert.doesNotMatch(notice[0].children.join(""), /CMD 无感|提示词已写入/);
       assert.deepEqual(
-        h.calls.filter((c) => c.method === "POST").map((c) => c.url),
+        h.calls
+          .filter((c) => c.method === "POST")
+          .map((c) => new URL(c.url, "http://test").pathname),
         ["/dsh-purge/apply"],
       );
       assert(!h.calls.some((c) => c.url.includes("/restart")));
@@ -235,7 +237,9 @@ test("Apply HTTP 500 displays runtime details without restart or leaking respons
     assert.match(text, /restore denied/);
     assert.doesNotMatch(text, /PRIVATE PROMPT/);
     assert.deepEqual(
-      h.calls.filter((c) => c.method === "POST").map((c) => c.url),
+      h.calls
+        .filter((c) => c.method === "POST")
+        .map((c) => new URL(c.url, "http://test").pathname),
       ["/dsh-purge/apply"],
     );
     assert(!h.calls.some((c) => c.url.includes("/restart")));

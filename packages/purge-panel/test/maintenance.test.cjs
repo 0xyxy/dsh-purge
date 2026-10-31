@@ -397,3 +397,42 @@ test("update status distinguishes loaded code, pending disk version and independ
   );
   await unmount(tree);
 });
+
+test("saving a token does not erase masked proxy credentials or auto-update preferences", async () => {
+  const h = harness(
+    () => reply({ ok: true, update_preferences: { hasGithubToken: true } }),
+    "UpdateChannelDialog",
+  );
+  let tree,
+    saved = false;
+  await act(async () => {
+    tree = create(
+      React.createElement(h.Component, {
+        value: {
+          proxyUrl: "socks5://proxy.test:1080",
+          hasProxyCredentials: true,
+          hasGithubToken: true,
+        },
+        onSaved() {
+          saved = true;
+        },
+        onClose() {},
+      }),
+    );
+  });
+  const field = tree.root
+    .findAllByType("input")
+    .find((n) => n.props.type === "password");
+  assert.equal(field.props.value, "");
+  await act(async () =>
+    field.props.onChange({ target: { value: "fixture-token" } }),
+  );
+  await click(tree, "保存");
+  assert(saved);
+  assert.equal(h.calls.length, 1);
+  assert.deepEqual(h.calls[0].body, {
+    op: "preferences",
+    value: { githubToken: "fixture-token" },
+  });
+  await unmount(tree);
+});

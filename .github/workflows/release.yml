@@ -22,6 +22,8 @@ jobs:
       - run: npm ci --ignore-scripts --legacy-peer-deps
       - run: npm --prefix packages/purge-panel ci --ignore-scripts --legacy-peer-deps
       - run: npm test && npm run check:client && npm run test:ui
+      - name: Bootstrap judges (unit + mutation + preset manifest)
+        run: npm run test:bootstrap && npm run check:presets
       - run: npm run check:docs
       - run: npm pack --ignore-scripts && node scripts/smoke.mjs
       - run: npm --prefix packages/purge-panel test
@@ -34,14 +36,16 @@ jobs:
           test "$(node -p "require('./package.json').name")" = "dsh-purge-community"
           npm pack --ignore-scripts
           cp "dsh-purge-community-$version.tgz" dsh-purge-community.tgz
-          sha256sum "dsh-purge-community-$version.tgz" dsh-purge-community.tgz > SHA256SUMS.txt
+          # 三层破甲定制包：源码即产物（pack-custom 内部会先同步预设，再做回读校验）
+          node bootstrap/pack-custom.mjs --out dsh-unleashed-custom.zip
+          sha256sum "dsh-purge-community-$version.tgz" dsh-purge-community.tgz dsh-unleashed-custom.zip > SHA256SUMS.txt
       - name: Publish community release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           version="$(node -p "require('./package.json').version")"
-          gh release create "$GITHUB_REF_NAME" "dsh-purge-community-$version.tgz" dsh-purge-community.tgz SHA256SUMS.txt --verify-tag --title "dsh-purge Community $version" --notes-file release-notes.md
+          gh release create "$GITHUB_REF_NAME" "dsh-purge-community-$version.tgz" dsh-purge-community.tgz dsh-unleashed-custom.zip SHA256SUMS.txt --verify-tag --title "dsh-purge Community $version" --notes-file release-notes.md
 
   installer:
     strategy:
@@ -57,6 +61,8 @@ jobs:
       - name: Full test suite
         if: runner.os != 'Windows'
         run: npm test
+      - name: Bootstrap judges
+        run: npm run test:bootstrap
       - name: Full Windows suite with bounded process concurrency
         if: runner.os == 'Windows'
         run: npm test -- --test-concurrency=2
@@ -83,6 +89,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:electron
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/check-update-runtime.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $env:ELECTRON_RUN_AS_NODE = '1'
           $downloadLog = Join-Path $env:RUNNER_TEMP 'purge-download.log'
           $downloadError = Join-Path $env:RUNNER_TEMP 'purge-download-error.log'
@@ -99,6 +107,7 @@ jobs:
           node "$runtime/node_modules/electron/install.js"
           export PURGE_ELECTRON_EXEC="$runtime/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
           npm run test:electron
+          node scripts/check-update-runtime.mjs
           ELECTRON_RUN_AS_NODE=1 "$PURGE_ELECTRON_EXEC" scripts/check-bootstrap-download-runtime.mjs
       - name: Real Linux root and service-user audit ownership
         if: runner.os == 'Linux'

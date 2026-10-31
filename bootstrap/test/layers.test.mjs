@@ -140,6 +140,36 @@ test("C6 补丁核对：na / disabled 直接结算，不问 readyFn（surface �
   });
   assert.equal(stateOf(v), "N_A", "na/disabled 不该被 readyFn 的 false 拖成红；全不适用时报 N_A 而非 PASS");
 });
+test("C6 逐文件：optional 补丁的兄弟目标漂移不阻塞，非 optional 才判红", () => {
+  const soft = patchAccounting({
+    patches: [P(53, { optional: true })],
+    statusById: { 53: "applied" },
+    activeIds: new Set([53]),
+    fileDetail: { 53: [{ key: "web-app-lib", status: "drifted" }] },
+  });
+  assert.equal(stateOf(soft), "PASS");
+  assert.match(soft.detail, /optional 目标未命中（未阻塞）/);
+
+  const hard = patchAccounting({
+    patches: [P(54)],
+    statusById: { 54: "applied" },
+    activeIds: new Set([54]),
+    fileDetail: { 54: [{ key: "web-app-lib", status: "drifted" }] },
+  });
+  assert.equal(stateOf(hard), "BROKEN");
+  assert.match(hard.detail, /逐文件异常/);
+});
+
+test("C6 逐文件：fileAllRequired 缺目标判红", () => {
+  const v = patchAccounting({
+    patches: [P(60, { optional: true, fileAllRequired: true })],
+    statusById: { 60: "applied" },
+    activeIds: new Set([60]),
+    fileDetail: { 60: [{ key: "a", status: "applied" }, { key: "b", status: "missing" }] },
+  });
+  assert.equal(stateOf(v), "BROKEN");
+  assert.match(v.detail, /fileAllRequired 缺目标/);
+});
 test("C6 补丁核对：disabledByDefault 的 #18/#19 是 N_A，不算失败", () => {
   const v = patchAccounting({
     patches: [P(1), P(18, { disabledByDefault: true }), P(19, { disabledByDefault: true })],

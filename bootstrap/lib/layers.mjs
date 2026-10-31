@@ -228,9 +228,16 @@ export function patchAccounting({ patches, statusById, drift, fileDetail = {}, e
     const missingRequired = entries.filter(
       (e) => e && (e.status === "missing" || e.status === "unreadable") && !optionalKeys.has(e.key) && p.fileAllRequired,
     );
+    // optional 补丁是"尽力而为"：某个兄弟目标漂移不阻塞整条（插件自己也只在 fileAllRequired 时
+    // 把逐文件结果升成 partial）。非 optional，或声明了 fileAllRequired，才算硬证据。
+    const hardFiles = !p.optional || p.fileAllRequired;
     if (brokenFiles.length) {
-      state = "BROKEN";
-      notes.push(`${p.id} 逐文件异常：${brokenFiles.map((e) => `${e.key}=${e.status}`).join(",")}`);
+      if (hardFiles) {
+        state = "BROKEN";
+        notes.push(`${p.id} 逐文件异常：${brokenFiles.map((e) => `${e.key}=${e.status}`).join(",")}`);
+      } else {
+        notes.push(`${p.id} optional 目标未命中（未阻塞）：${brokenFiles.map((e) => `${e.key}=${e.status}`).join(",")}`);
+      }
     }
     if (missingRequired.length) {
       state = "BROKEN";

@@ -1,0 +1,88 @@
+// #18/#19 shipped upstream but they remove context protection rather than a gate,
+// so this fork keeps them off by default and only writes them when explicitly enabled.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { ALL_PATCHES, applyPatches, patchEnabled, patchStatus, patchStatusReady } from "../lib/core.js";
+import { writeTuning, readTuning } from "../lib/tuning.js";
+import { tallyPatchStatus } from "../lib/selfcheck.js";
+import { removeTreeNoFollowSync } from "../lib/remove-tree.js";
+
+const REPEAT_SOURCE = [
+  '\tctx.on("tools/post-execute", async (exec, _result, next) => {',
+  '\t\tconst reminder = observe(exec);',
+  '\t\tconst downstream = await next();',
+  '\t\tif (!reminder) return downstream;',
+  '\t\treturn { ...downstream, additionalContexts: prependContext(reminder, downstream.additionalContexts) };',
+  '\t});',
+].join("\n");
+
+function fixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "purge-optin-"));
+  const app = path.join(root, "app");
+  const host = path.join(app, "node_modules/@deepseek-ai");
+  const home = path.join(root, "home");
+  const dir = path.join(host, "dsh-repeat-tool-reminder/lib");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(home, { recursive: true });
+  // 用真实锚点原文当测试夹具：补丁只认这一整段。
+  fs.writeFileSync(path.join(dir, "index.js"), `${ALL_PATCHES.find((p) => p.id === 18).replacements[0].pattern}\n`);
+  return { root, host, home, close: () => removeTreeNoFollowSync(root) };
+}
+
+const patch18 = ALL_PATCHES.find((p) => p.id === 18);
+
+test("#18/#19 are opt-in and off by default", () => {
+  assert.equal(patch18.disabledByDefault, true);
+  assert.equal(ALL_PATCHES.find((p) => p.id === 19).disabledByDefault, true);
+  assert.equal(patchEnabled(patch18, []), false);
+  assert.equal(patchEnabled(patch18, [18]), true);
+});
+
+test("disabled patches report disabled and are not written", async () => {
+  const f = fixture();
+  try {
+    const opts = { dshHome: f.home, surface: "desktop", extraPatches: [] };
+    const report = await applyPatches(f.host, [patch18], opts);
+    assert.equal(report[0].status, "disabled");
+    assert.equal(
+      fs.readFileSync(path.join(f.host, "dsh-repeat-tool-reminder/lib/index.js"), "utf8"),
+      `${patch18.replacements[0].pattern}\n`,
+    );
+
+    const status = await patchStatus(f.host, [patch18], opts);
+    assert.equal(status[18], "disabled");
+    assert.equal(patchStatusReady("disabled", patch18), true, "an intentional off switch is not a failure");
+    assert.equal(tallyPatchStatus(status, [patch18]).disabled, 1);
+    assert.equal(tallyPatchStatus(status, [patch18]).not_applicable, 1);
+  } finally {
+    f.close();
+  }
+});
+
+test("enabling writes the patch and flips the status to applied", async () => {
+  const f = fixture();
+  try {
+    const opts = { dshHome: f.home, surface: "desktop", extraPatches: [18] };
+    const report = await applyPatches(f.host, [patch18], opts);
+    assert.equal(report[0].status, "applied");
+    const text = fs.readFileSync(path.join(f.host, "dsh-repeat-tool-reminder/lib/index.js"), "utf8");
+    assert.ok(text.includes("[dsh-purge] repeat-tool-reminder disabled"));
+    const status = await patchStatus(f.host, [patch18], opts);
+    assert.equal(status[18], "applied");
+  } finally {
+    f.close();
+  }
+});
+
+test("tuning round-trips the opt-in list and drops junk", () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "purge-tuning-"));
+  try {
+    writeTuning({ extraPatches: [19, 18, 18, "x", -1] }, home);
+    assert.deepEqual(readTuning(home).extraPatches, [18, 19]);
+  } finally {
+    removeTreeNoFollowSync(home);
+  }
+});

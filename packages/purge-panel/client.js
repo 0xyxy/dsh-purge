@@ -9191,6 +9191,7 @@ var zh = {
   "metric.unmatchedShort": "\u6CA1\u5BF9\u4E0A {n}",
   "metric.partialShort": "\u90E8\u5206\u547D\u4E2D {n}",
   "metric.driftedShort": "\u951A\u70B9\u6F02\u79FB {n}",
+  "metric.disabledShort": "\u53EF\u9009\u5173\u95ED {n}",
   "metric.skipShort": "\u8DF3\u8FC7 {n}",
   "metric.unlocated.count": "\u2014",
   "metric.shim": "shim",
@@ -9207,6 +9208,7 @@ var zh = {
   "status.partial": "\u90E8\u5206\u547D\u4E2D",
   "status.partialDetail": "\uFF08{done}/{total} \u76EE\u6807\uFF09",
   "status.drifted": "\u951A\u70B9\u6F02\u79FB",
+  "status.disabled": "\u53EF\u9009\u5173\u95ED",
   "status.skipped": "\u8DF3\u8FC7",
   "apply.hint": "\u70B9\u5E94\u7528\u4F1A\u6253\u8865\u4E01\u5E76\u628A\u5F53\u524D\u9ED8\u8BA4\u63D0\u793A\u8BCD\u6302\u4E0A\uFF0C\u6846\u91CC\u4ECD\u662F\u63D2\u4EF6\u65E7\u9ED8\u8BA4\u65F6\u81EA\u52A8\u5237\u5230\u52A0\u5BC6\u69FD\uFF0C\u4E0D\u5FC5\u518D\u70B9\u4FDD\u5B58\u3002\u53EA\u6709\u4F60\u53E6\u5199\u7684\u7A3F\u624D\u4F1A\u6309\u6846\u843D\u76D8\u3002\u5F85\u5E94\u7528=\u539F\u6587\u8FD8\u5728\u3002\u8DF3\u8FC7=\u5F53\u524D\u7248\u672C\u4E0D\u9700\u8981\u6216\u7EC4\u4EF6\u672A\u5B89\u88C5\u3002",
   "warn.noRoot": "\u672A\u5B9A\u4F4D\u5230\u5F53\u524D\u5BBF\u4E3B\u7684 @deepseek-ai\uFF0C\u6E05\u6D17\u4E0D\u4F1A\u751F\u6548\u3002\u8BF7\u5B8C\u5168\u9000\u51FA\u540E\u518D\u6253\u5F00\u672C\u5BBF\u4E3B\uFF0C\u5728\u672C\u9875\u70B9\u300C\u5E94\u7528\u300D\u3002\u684C\u9762\u7AEF\u5B89\u88C5\u76EE\u5F55\u53EF\u4EE5\u662F\u4EFB\u610F\u76D8\u7B26\uFF1B\u76EE\u5F55\u540D\u5E26 DeepseekHarness / DeepSeek Harness \u5747\u53EF\u3002",
@@ -9566,6 +9568,7 @@ var en = {
   "metric.unmatchedShort": "No match {n}",
   "metric.partialShort": "Partial {n}",
   "metric.driftedShort": "Drifted {n}",
+  "metric.disabledShort": "Opt-in off {n}",
   "metric.skipShort": "Skipped {n}",
   "metric.unlocated.count": "\u2014",
   "metric.shim": "shim",
@@ -9582,6 +9585,7 @@ var en = {
   "status.partial": "Partial",
   "status.partialDetail": " ({done}/{total} targets)",
   "status.drifted": "Drifted",
+  "status.disabled": "Opt-in off",
   "status.skipped": "Skipped",
   "apply.hint": "Apply writes patches and hangs the current default prompt. A stale plugin default in the box is refreshed from the sealed slot; a separate save is unnecessary. Only a prompt you wrote yourself is kept from the box. Pending = original text still present. Skipped = not needed for this version or the component is not installed.",
   "warn.noRoot": "Could not find this host\u2019s @deepseek-ai tree, so Apply will not patch anything. Fully quit and reopen this host, then Apply here. Desktop may live on any drive; folder names like DeepseekHarnessDesktop or DeepSeek Harness are fine.",
@@ -10037,6 +10041,7 @@ function statusKind(st) {
   if (st === "unmatched") return "bad";
   if (st === "partial") return "bad";
   if (st === "drifted") return "bad";
+  if (st === "disabled") return "muted";
   if (st === "na") return "ok";
   if (st === "missing_file" || st === "skipped" || st === "unlocated" || st === "off")
     return "miss";
@@ -10049,6 +10054,7 @@ function statusLabel(st, t) {
   if (st === "unmatched") return t("status.unmatched");
   if (st === "partial") return t("status.partial");
   if (st === "drifted") return t("status.drifted");
+  if (st === "disabled") return t("status.disabled");
   if (st === "skipped") return t("status.skipped");
   if (st === "missing_file") return t("skip");
   if (st === "unlocated") return t("status.unlocated");
@@ -10093,6 +10099,7 @@ function tallyPatches(rows) {
     else if (row.st === "unmatched") out.unmatched += 1;
     else if (row.st === "partial") out.partial += 1;
     else if (row.st === "drifted") out.drifted += 1;
+    else if (row.st === "disabled") out.disabled += 1;
     else out.skipped += 1;
   }
   return out;

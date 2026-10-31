@@ -1,7 +1,7 @@
 # AGENTS.md — 给 AI agent 的 Purge 使用说明书
 
 > 这份文件是写给**在 DSH 里干活的 agent** 的，不是营销文档。
-> 当前版本：**1.6.64** · 适配 DSH Desktop **0.2.1-rc.5**（rc.1 / rc.2 / rc.3 同样通过）
+> 当前版本：**1.6.65** · 适配 DSH Desktop **0.2.1-rc.5**（rc.1 / rc.2 / rc.3 同样通过）
 > 版本号由 `npm run check:docs` 与 `package.json` 校验，发版必须同步。
 
 ---
@@ -16,7 +16,7 @@
 
 | 层 | 由谁提供 | 生效方式 | 你能怎么查 |
 | --- | --- | --- | --- |
-| **宿主补丁**（82 条） | 本插件写进 DSH 源码 | 点「应用」写入 → **退出重开**才加载 | `selfcheck` 看各层 `applied/required` |
+| **宿主补丁**（84 条） | 本插件写进 DSH 源码 | 点「应用」写入 → **退出重开**才加载 | `selfcheck` 看各层 `applied/required` |
 | **提示词注入** | 插件运行时（每步重贴） | `prompt-inject.md` 作为 `dsh-purge` section | 探针（§4）或看 `selfcheck` 的「运行时提示词注入」 |
 | **破甲强化段** | 插件运行时 | 尾部 section（默认开） | `purge-community boost` |
 | **权限配置** | profile 的 `cordis.patch.yml` | `danger-full-access` + `approval: never` | `selfcheck` 的「当前 profile 的权限选择」 |
@@ -29,7 +29,7 @@
 ```
 通过官方界面/CLI 首次安装，或社区安装器备份迁移
    ↓
-点「应用」→ 解包 host / 写 82 条补丁 / 建快照
+点「应用」→ 解包 host / 写 84 条补丁 / 建快照
    ↓
 退出并重开 DSH   ← 补丁只有重启后才被加载
    ↓
@@ -86,7 +86,7 @@ purge-community probe new
 
 | 症状 | 先跑 | 判读 | 动作 |
 | --- | --- | --- | --- |
-| 补丁数不是 73/76（全量 82） | `selfcheck --json` | 看 `layers[].state` | pending → 点应用；broken → `diagnose` |
+| 补丁数不是 73/76（全量 84） | `selfcheck --json` | 看 `layers[].state` | pending → 点应用；broken → `diagnose` |
 | 全部 `missing_file` | `status` | `ai_base` 为空 | 宿主未解包：点应用 → 重开 |
 | 模型开始推脱/要求确认 | `probe new` | 回显否 | 回显：调人设/强化段；不回显：检查注入层 |
 | 工具被拒绝执行 | `selfcheck` | 沙箱/审批层是否绿 | 绿 → 属工具自身限制；红 → 点应用 |
@@ -109,7 +109,7 @@ purge-community probe new
 
 **不变量**：`prompt-inject.md`、规则集、其他插件配置，任何时候都不该被「应用」或「回滚」覆盖。
 
-## 7. 补丁表：82 条，怎么读、怎么加
+## 7. 补丁表：84 条，怎么读、怎么加
 
 - 定义在 `lib/core.js` 的 `ALL_PATCHES`（`PATCHES` / `CODE_PATCHES` / `ENGINE_PATCHES` / `NEW_TOOL_PATCHES`）。
 - 每条 = `{id, name, layer, file, replacements:[{pattern, replace}], markers, optional?}`；`pattern` 是对宿主源码的**精确片段**（或正则），`markers` 用来判断"已应用"。
@@ -133,7 +133,7 @@ purge-community probe new
 
 | 组件 | 值 |
 | --- | --- |
-| 插件 | `dsh-purge-community` 1.6.64 |
+| 插件 | `dsh-purge-community` 1.6.65 |
 | 已验证宿主 | DSH Desktop 0.2.1-rc.1 / 0.2.1-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 |
 | 其它宿主 | 允许应用，但 `selfcheck` 会标"未验证"；先看 `diagnose` |
 | Node | ≥18（桌面版自带运行时即可） |
@@ -434,3 +434,13 @@ Web 子路径请求按实际插件脚本路径定位挂载点，根路径和桌�
 ## DSH Store 提交与复检
 
 主插件申请必须使用 `GitHub repository: https://github.com/kingcharleslzy-ai/dsh-purge`、`Plugin path (optional): .`，不能因为表单提示根目录留空就省略。保留 `packages/purge-panel`；它不是本次安装目标。兼容信息从根 manifest 的 `dsh.compatibility` 读取，不把 README 范围或相邻版本推断写成精确 `compatible`。rc.4 和 alpha.2 尚为 unknown；rc.5 的作者声明依据与局限见 [DSH Store 说明](docs/DSH-STORE.md)。不得伪造固定 Commit 的 install/start/uninstall/rollback 证据，不为市场准入删功能或隐藏宿主维护能力。
+
+## 1.6.65：默认关闭的可选补丁（#18/#19）
+
+- 一条补丁可以声明 `disabledByDefault: true`；只有 `tuning.json` 的 `extraPatches` 列出它的 id 时才打。
+- CLI：`purge-community patches [list|enable 18,19|disable 19]`；开关后要**点一次「应用」**再退出重开。
+- 状态：`disabled` 表示"按选择关闭"，`patchStatusReady("disabled")` 为 true，自检计入明确不适用，不报红。
+- 当前 opt-in 名单：
+  - **#18 重复调用提醒关闭**：收益是工具循环提示词干净；代价是模型可能在同一处反复试错而没人提醒。
+  - **#19 工具结果修剪关闭**：收益是能读到完整工具输出（大文件/长日志/完整 diff）；代价是上下文线性膨胀、更快触顶、更贵、长会话更容易答非所问。
+  - 两者都**不解锁任何门禁**，只改上下文管理；默认关闭。

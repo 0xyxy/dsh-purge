@@ -114,16 +114,21 @@ test("C6 补丁核对：skipped 只按证据结算（自带 silentWhenMissing，
   );
 });
 
-test("C6 补丁核对：readyFn 交给插件判（旧版插件把 skipped 判为已完事）", () => {
-  const patches = [P(76, { optional: true }), P(80, { optional: true })];
-  const statusById = { 76: "skipped", 80: "skipped" };
-  const readyFn = () => true;
-  const v = patchAccounting({ patches, statusById, activeIds: new Set([76, 80]), readyFn });
-  assert.equal(stateOf(v), "N_A");
-  assert.deepEqual(v.problems, []);
-  // 插件说"没完事"时仍然要红
-  const strict = patchAccounting({ patches, statusById, activeIds: new Set([76, 80]), readyFn: () => false });
-  assert.equal(stateOf(strict), "BROKEN");
+test("C6 补丁核对：optional 的 skipped 记 N_A 并点名「未独立验证」，非 optional 的 skipped 判红", () => {
+  const optionalSkipped = patchAccounting({
+    patches: [P(76, { optional: true }), P(80, { optional: true })],
+    statusById: { 76: "skipped", 80: "skipped" },
+    activeIds: new Set([76, 80]),
+  });
+  assert.equal(stateOf(optionalSkipped), "N_A");
+  assert.match(optionalSkipped.detail, /未独立验证/);
+
+  const requiredSkipped = patchAccounting({
+    patches: [P(12)],
+    statusById: { 12: "skipped" },
+    activeIds: new Set([12]),
+  });
+  assert.equal(stateOf(requiredSkipped), "BROKEN", "非 optional 且没声明静默 = 该打没打上");
 });
 
 test("C6 补丁核对：na / disabled 直接结算，不问 readyFn（surface 与按选择关闭是插件自己的判定）", () => {
@@ -238,7 +243,9 @@ test("汇总：任一层 BROKEN 即整体 BROKEN，层状态与计数正确", ()
   ]);
   assert.equal(s.state, "BROKEN");
   assert.equal(s.exitCode, 1);
-  assert.equal(s.pass, 1);
+  assert.equal(s.verified, 1);
+  assert.equal(s.notApplicable, 0);
+  assert.equal(s.settled, 1);
   assert.equal(s.total, 3);
   assert.equal(s.layerState("代码"), "ACTION_REQUIRED");
 });

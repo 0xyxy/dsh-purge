@@ -160,23 +160,26 @@ export function presetSync({ repoManifest = {}, payloadManifest = {}, payloadOnl
  *   - 目标文件根本不存在（`activeIds` 里没有它）→ 无对象，结算；
  *   - 目标文件在、却没打上、也没声明静默 → 这是"该打没打上"，判 BROKEN。
  */
-function skippedIsSettled(patch, activeIds) {
-  if (patch?.silentWhenMissing) return true;
-  return !activeIds.has(patch.id);
-}
-
 /**
- * C6 按插件自己的补丁表核对宿主。
+ * C6 按插件自己的补丁表核对宿主（逐文件硬证据版）。
  *
- * 吸收上游语义：漂移 / 部分命中 / 命中数不符都是"没打上"；pending 是"还没点应用"。
- * disabledByDefault（#18/#19）按选择关闭 → N_A。
- * `optional` 补丁只在目标文件确实不存在时才算不适用；目标在就要真核对（否则第三方插件
- * 装上了、补丁漂了，也会被"optional"两个字盖过去）。
+ * 为什么不再用 patchStatusReady()：那是状态页的"软就绪"判据，对 skipped / missing_file
+ * 都返回 true（第三轮对抗审查实测）。拿它做验收门槛 = 把"该打没打上"和"目标文件根本不在"
+ * 一起当通过。
  *
- * exempt 不接受裸 id 白名单：必须是 { [id]: { reason, proof: true } }，proof 由调用方现场算。
- * activeIds 由调用方给（该补丁至少有一个目标文件真实存在）。
+ * 现在的规则（按补丁状态 + 逐文件明细）：
+ *   applied / already                     → PASS
+ *   pending                               → ACTION_REQUIRED
+ *   na / disabled                          → N_A（surface 或按选择关闭，插件已判）
+ *   missing / missing_file                 → 必需补丁 BROKEN；optional 且无目标存在 → N_A
+ *   skipped                                → 仅 silentWhenMissing，或 optional 且目标全不在 → N_A；否则 BROKEN
+ *   其余（drifted/partial/unmatched/…）     → BROKEN
+ * 另外：`fileDetail` 里**现存**目标只要出现 drifted/unmatched/unreadable/partial → BROKEN；
+ *      声明 `fileAllRequired` 的补丁，每个非 `fileOptional` 目标都必须存在且已结算。
+ *
+ * exempt 必须带 proof：{ [id]: { reason, proof: true } }，proof 由调用方现场算。
  */
-export function patchAccounting({ patches, statusById, drift, exempt = {}, activeIds = null, readyFn = null }) {
+export function patchAccounting({ patches, statusById, drift, fileDetail = {}, exempt = {}, activeIds = null }) {
   const list = Array.isArray(patches) ? patches : [];
   if (!list.length) {
     return { state: "BROKEN", detail: "补丁表为空（插件未装或 core.js 未加载）", fix: "先装 dsh-purge-community" };
@@ -189,21 +192,52 @@ export function patchAccounting({ patches, statusById, drift, exempt = {}, activ
   const states = [];
   const notes = [];
   const problems = [];
+  const FILES_BROKEN = new Set(["drifted", "partial", "unmatched", "hit_mismatch", "unreadable", "error"]);
+
+  const settle = (p, s) => {
+    switch (s) {
+      case "applied":
+      case "already":
+        return "PASS";
+      case "pending":
+        return "ACTION_REQUIRED";
+      case "na":
+      case "disabled":
+        return "N_A";
+      case "missing":
+      case "missing_file":
+        return p.optional ? "N_A" : "BROKEN";
+      case "skipped":
+        // silentWhenMissing（上游 1.6.63+）或 optional 目标"插件判定无需处理" → N_A，但会记进 notes。
+        // 非 optional 的 skipped 且没声明静默 = 该打没打上（1.6.63+ 这种情形会直接报 drifted）→ BROKEN。
+        if (p.silentWhenMissing || p.optional) return "N_A";
+        return "BROKEN";
+      default:
+        return "BROKEN";
+    }
+  };
 
   for (const p of required) {
     const s = status[p.id] ?? "unknown";
-    let state;
-    // surface / 按选择关闭：插件自己已经判了"这条不适用或不打算打"，直接结算，别再问 ready。
-    if (s === "na" || s === "disabled") state = "N_A";
-    else if (typeof readyFn === "function") {
-      // 让插件自己判"这条算不算完事"（它知道 drifted/partial/silentWhenMissing 的语义），
-      // 我们只在它说"完了"时再分级，避免手搓规则跟插件版本对不上。
-      const ready = readyFn(s, p) === true;
-      state = ready ? (s === "applied" || s === "already" ? "PASS" : "N_A") : s === "pending" ? "ACTION_REQUIRED" : "BROKEN";
-    } else {
-      state = s === "skipped" ? (skippedIsSettled(p, active) ? "N_A" : "BROKEN") : STATUS_STATE[s];
+    let state = settle(p, s);
+
+    // 逐文件证据：现存目标里出现漂移/不匹配/不可读，一律 BROKEN（即使聚合状态说 applied）
+    const entries = fileDetail[p.id] ?? fileDetail[String(p.id)] ?? [];
+    const optionalKeys = new Set([].concat(p.fileOptional ?? []));
+    const brokenFiles = entries.filter((e) => e && FILES_BROKEN.has(e.status));
+    const missingRequired = entries.filter(
+      (e) => e && (e.status === "missing" || e.status === "unreadable") && !optionalKeys.has(e.key) && p.fileAllRequired,
+    );
+    if (brokenFiles.length) {
+      state = "BROKEN";
+      notes.push(`${p.id} 逐文件异常：${brokenFiles.map((e) => `${e.key}=${e.status}`).join(",")}`);
     }
-    if (state === undefined) state = "BROKEN";
+    if (missingRequired.length) {
+      state = "BROKEN";
+      notes.push(`${p.id} fileAllRequired 缺目标：${missingRequired.map((e) => e.key).join(",")}`);
+    }
+
+    if (state === "N_A" && s === "skipped") notes.push(`${p.id} 插件判定无需处理（optional/silent，未独立验证）`);
     if (state === "BROKEN" && exempt[p.id]?.proof === true) {
       state = "N_A";
       notes.push(`${p.id} 由外部证据证明：${exempt[p.id].reason || "proof"}`);
@@ -245,7 +279,6 @@ export function patchAccounting({ patches, statusById, drift, exempt = {}, activ
         : "";
   return { state, detail, fix, problems };
 }
-
 /**
  * C4 循环守卫：查**具体补丁的 marker**，不再数通用 `[dsh-purge]`（那会被 #68 或任意其它
  * 标记冒充），也不再依赖体量阈值（宿主压缩/拆包会让 60KB 变噪声）。
@@ -297,11 +330,15 @@ export function layerSummary(rows) {
   const byLayer = Object.fromEntries(LAYERS.map((l) => [l, []]));
   for (const r of rows) (byLayer[r.layer] ||= []).push(r);
   const layerState = (l) => worstState((byLayer[l] || []).map((r) => r.state));
+  const verified = rows.filter((r) => r.state === "PASS").length;
+  const notApplicable = rows.filter((r) => r.state === "N_A").length;
   return {
     byLayer,
     layerState,
     state: worstState(rows.map((r) => r.state)),
-    pass: rows.filter((r) => r.state === "PASS" || r.state === "N_A").length,
+    verified,
+    notApplicable,
+    settled: verified + notApplicable,
     total: rows.length,
     exitCode: exitCodeFor(rows.map((r) => r.state)),
   };

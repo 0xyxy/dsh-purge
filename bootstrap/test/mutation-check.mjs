@@ -29,8 +29,8 @@ const MUTATIONS = [
   },
   {
     name: "C6 把 pending 当通过（回到软成功）",
-    from: '  pending: "ACTION_REQUIRED",',
-    to: '  pending: "PASS",',
+    from: '      case "pending":\n        return "ACTION_REQUIRED";',
+    to: '      case "pending":\n        return "PASS";',
     run: async (m) =>
       acceptable(m.patchAccounting({ patches: [{ id: 1, layer: "代码" }], statusById: { 1: "pending" } })),
     correct: false,

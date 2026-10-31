@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -201,6 +202,27 @@ function verifyZip(buffer) {
   }
   return { ok: true, entries };
 }
+
+// 发行清单：让解压后的安装器知道"我来自哪个仓库、哪个 tag、该装哪个版本、两个资产各是什么哈希"。
+// 没有它，ZIP 里的脚本默认仓库与发布仓库不一致时，就会出现"定制层来自 A、插件层来自 B"。
+const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const tgzPath = path.join(path.dirname(out), `${pkg.name}-${pkg.version}.tgz`);
+const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
+const manifest = {
+  repo: process.env.PURGE_RELEASE_REPO || "0xyxy/dsh-purge",
+  tag: process.env.PURGE_RELEASE_TAG || `v${pkg.version}`,
+  version: pkg.version,
+  assets: {
+    plugin: `${pkg.name}-${pkg.version}.tgz`,
+    custom: path.basename(out),
+  },
+  sha256: {},
+};
+if (fs.existsSync(tgzPath)) manifest.sha256.plugin = sha256(fs.readFileSync(tgzPath));
+manifest.sha256.custom_pending = "(构建后自校验，见 SHA256SUMS.txt)";
+files.push({ name: "release-manifest.json", data: Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`, "utf8") });
+// 再算一次清单文件本身的哈希说明（自引用做不到，写进输出日志即可）
+console.log(`  · manifest: ${manifest.repo} ${manifest.tag} v${manifest.version}${manifest.sha256.plugin ? ` plugin.sha256=${manifest.sha256.plugin.slice(0, 16)}…` : ""}`);
 
 fs.mkdirSync(path.dirname(out), { recursive: true });
 const zip = buildZip(files);

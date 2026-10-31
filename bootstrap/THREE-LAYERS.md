@@ -69,9 +69,11 @@ purge-community patches disable 19
 | C3 | 升级目标全开 | `ESCALATION_TARGETS` 含 `danger-full-access` |
 | C4 | 循环守卫在位 | `dsh-agent-loop` 含 **#67 与 #68 的具体 marker**（不再数通用 `[dsh-purge]`，也不再靠 60KB 体量阈值——那是版本耦合噪声） |
 | C5 | 可细粒度回滚 | `@deepseek-ai` 下存在 `.dshpurge.bak` |
-| **C6** | **补丁表全量核对** | `patchStatus` + `patchDrift`：`applied/already` 通过；`pending` → `ACTION_REQUIRED`；`drifted/partial/unmatched/hit_mismatch/unreadable` → `BROKEN`；`disabled/na` → `N_A`；`skipped` 只在补丁自带 `silentWhenMissing` 或 pattern 本身就是 `[dsh-purge]` 痕迹时才算结算 |
+| **C6** | **补丁表全量核对** | `patchStatus` + `patchDrift`：`applied/already` 通过；`pending` → `ACTION_REQUIRED`；`drifted/partial/unmatched/hit_mismatch/unreadable` → `BROKEN`；`disabled/na` → `N_A`；`skipped` 只有补丁自带 `silentWhenMissing` 或该补丁是 `optional`（插件判定"无需处理"，会在 detail 里点名"未独立验证"）才算 `N_A`；非 optional 的 `skipped` = 该打没打上 → `BROKEN` |
 | **C7** | **锚点唯一** | 待打补丁（`pending`）的字面锚点必须在宿主里找得到；0 次 = 写法变了要 `reanchor`，>1 次 = replace-all 会顺手改错（点名但不判红） |
 
+> C6 不接受 `patchStatusReady()` 当裁决（状态页"软就绪"对 `skipped`/`missing_file` 都返回 true），一律按"状态 + 逐文件明细"的硬规则判；`fileAllRequired` 缺目标或现存文件飘移直接 `BROKEN`。
+>
 > C6 的豁免机制曾经是个假绿入口：原来写 `exempt: [71]`，任意 `unknown` 只要 id 在白名单里就放行。现在豁免必须是 `{ reason, proof: true }`，**proof 由调用方现场算**（#71 的 proof = liangshen 预设文件存在 + 官方身份句已消失 + #71 marker 在位），三缺一就不放行。
 
 ### 引擎层（E1–E6）
@@ -107,7 +109,7 @@ node bootstrap\pack-custom.mjs                  # 打 release 用的 dsh-unleash
 ── 提示词层 PASS ──  P1 ✓  P2 ✓  P3 ✓  P4 ✓  P5 ✓  P6 ✓  P7 ✓
 ── 代码层  PASS ──  C1 ✓  C2 ✓  C3 ✓  C4 ✓  C5 ✓  C6 ✓  C7 ·
 ── 引擎层  PASS ──  E1 ✓  E2 ✓  E3 ✓  E4 ✓  E5 ✓  E6 ✓
-合计 20/20 项通过 · 整体 PASS · 退出码 0
+已验证 19 · 不适用 1 · 待处理/坏 0 · 共 20 项 · 整体 PASS · 退出码 0
 （C7 为 N_A：当时没有 pending 补丁可查）
 ```
 

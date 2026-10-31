@@ -249,11 +249,15 @@ check("代码", "C5", "逐文件原始备份存在（可细粒度回滚）", boo
 let accounting = { state: "BROKEN", detail: `未找到插件：${pluginLib}`, fix: "先装 dsh-purge-community 再复验" };
 let statusById = null;
 let activeIds = new Set();
+let fileDetail = {};
 let drift = null;
 if (core) {
   try {
     statusById = await core.patchStatus(AI);
     drift = typeof core.patchDrift === "function" ? await core.patchDrift(AI) : null;
+    // 逐文件明细：只信"现存文件到底怎么了"，不信聚合状态的软就绪
+    const detailReport = typeof core.patchStatusDetail === "function" ? await core.patchStatusDetail(AI) : {};
+    fileDetail = detailReport?.files ?? {};
     // 哪些补丁"目标文件真实存在"：optional 补丁只在目标不在场时才允许算不适用。
     const targetMap = core.targetFiles(AI);
     activeIds = new Set();
@@ -268,7 +272,7 @@ if (core) {
       statusById,
       drift,
       activeIds,
-      readyFn: typeof core.patchStatusReady === "function" ? core.patchStatusReady : null,
+      fileDetail,
       exempt: {
         71: { reason: "liangshen 预设存在、官方身份句已消失、#71 marker 在位", proof: liangshenProof },
       },
@@ -353,7 +357,9 @@ if (asJson) {
         exit_code: summary.exitCode,
         patch_accounting: accounting,
         layers: summary.byLayer,
-        ok: summary.exitCode === 0,
+        verified: summary.verified,
+        not_applicable: summary.notApplicable,
+        blocked: summary.exitCode !== 0,
       },
       null,
       2,
@@ -372,7 +378,9 @@ if (asJson) {
     }
     console.log("");
   }
-  console.log(`合计 ${summary.pass}/${summary.total} 项通过 · 整体 ${summary.state} · 退出码 ${summary.exitCode}`);
+  console.log(
+    `已验证 ${summary.verified} · 不适用 ${summary.notApplicable} · 待处理/坏 ${summary.total - summary.settled} · 共 ${summary.total} 项 · 整体 ${summary.state} · 退出码 ${summary.exitCode}`,
+  );
   if (summary.exitCode === 2) console.log("提示：ACTION_REQUIRED = 需要点一次「应用」并完整退出重开；WAITING = 换包/重启还没落地。");
 }
 process.exit(summary.exitCode);

@@ -37,9 +37,25 @@ $log = Join-Path $here 'install-layers.log'
 function W($m) { $line = ("{0} {1}" -f (Get-Date).ToString('HH:mm:ss'), $m); Write-Host $line; $line | Out-File -FilePath $log -Append -Encoding utf8 }
 function Fail($m) { W "FAIL: $m"; exit 1 }
 
+# 发行清单优先：ZIP 里带着 release-manifest.json（repo / tag / version / plugin sha256），
+# 没显式传参就按它来，避免"定制层来自 A 仓库、插件层来自 B 仓库"。
+$manifest = $null
+$manifestPath = Join-Path $here 'release-manifest.json'
+if (Test-Path $manifestPath) {
+  try { $manifest = Get-Content $manifestPath -Raw -Encoding utf8 | ConvertFrom-Json } catch { $manifest = $null }
+}
+if ($manifest) {
+  if (-not $PSBoundParameters.ContainsKey('Repo') -and $manifest.repo) { $Repo = $manifest.repo }
+  if (-not $PSBoundParameters.ContainsKey('Tag') -and $manifest.tag) { $Tag = $manifest.tag }
+  if (-not $ExpectVersion -and $manifest.version) { $ExpectVersion = $manifest.version }
+  W "发行清单：$($manifest.repo) $($manifest.tag) v$($manifest.version)"
+}
 if (-not $PluginUrl) {
   $pluginName = if ($Tag -eq 'latest') { 'dsh-purge-community.tgz' } else { "dsh-purge-community-$($Tag.TrimStart('v')).tgz" }
   $PluginUrl = "https://github.com/$Repo/releases/$Tag/download/$pluginName"
+}
+if ($manifest -and $manifest.assets -and $manifest.assets.plugin -and $Tag -ne 'latest') {
+  $PluginUrl = "https://github.com/$Repo/releases/$Tag/download/$($manifest.assets.plugin)"
 }
 if (-not $CustomUrl) { $CustomUrl = "https://github.com/$Repo/releases/$Tag/download/dsh-unleashed-custom.zip" }
 if (-not $ExpectVersion) {
@@ -110,7 +126,22 @@ function Get-PluginVersion {
 }
 function Install-Plugin {
   New-Item -ItemType Directory -Force -Path $profileDir | Out-Null
-  & $nodeExe $pnpmMjs --dir $profileDir add $PluginUrl 2>&1 | ForEach-Object { W "  pnpm: $_" }
+  # 先下载再装：这样能在写任何东西之前验 SHA256（URL 直装没有校验点）。
+  $source = $PluginUrl
+  if ($PluginUrl -match '^https?://') {
+    $tmp = Join-Path $env:TEMP ("purge-plugin-" + [guid]::NewGuid().ToString('N') + ".tgz")
+    Invoke-WebRequest -Uri $PluginUrl -OutFile $tmp -UseBasicParsing
+    if ($manifest -and $manifest.sha256 -and $manifest.sha256.plugin) {
+      $actual = (Get-FileHash $tmp -Algorithm SHA256).Hash.ToLower()
+      if ($actual -ne $manifest.sha256.plugin.ToLower()) {
+        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+        Fail "插件包 SHA256 不符（期望 $($manifest.sha256.plugin.Substring(0,16))… 实际 $($actual.Substring(0,16))…），已停止"
+      }
+      W "插件包 SHA256 校验通过"
+    }
+    $source = $tmp
+  }
+  & $nodeExe $pnpmMjs --dir $profileDir add $source 2>&1 | ForEach-Object { W "  pnpm: $_" }
   $code = $LASTEXITCODE
   if ($code -ne 0) { Fail "pnpm add 失败（退出码 $code），检查网络与 $PluginUrl" }
   $pkgJson = Join-Path $profileDir 'package.json'
@@ -150,7 +181,17 @@ if (-not (Test-Path (Join-Path $payload 'prompt-inject.md'))) {
   W '从 release 下载定制包 ...'
   $zip = Join-Path $env:TEMP 'dsh-unleashed-custom.zip'
   Invoke-WebRequest -Uri $CustomUrl -OutFile $zip -UseBasicParsing
-  Expand-Archive $zip -DestinationPath $payload -Force
+  # 新版 ZIP 根是 bootstrap/ + presets/，直接解到 $payload 会变成 payload/bootstrap/payload。
+  # 先解到临时根，再把 bootstrap/payload 这一层拿过来。
+  $stage = Join-Path $env:TEMP ("purge-custom-" + [guid]::NewGuid().ToString('N'))
+  Expand-Archive $zip -DestinationPath $stage -Force
+  $inner = Join-Path $stage 'bootstrap\payload'
+  if (Test-Path (Join-Path $inner 'prompt-inject.md')) {
+    Copy-Item $inner $payload -Recurse -Force
+  } else {
+    Copy-Item (Join-Path $stage 'payload') $payload -Recurse -Force
+  }
+  Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 }
 $stamp = Get-Date -Format yyyyMMdd-HHmmss
 $written = @()   # 事务清单：本次改过的用户文件（失败时按它回退）

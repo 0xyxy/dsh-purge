@@ -52,6 +52,7 @@
     "sync:presets": "node bootstrap/sync-presets.mjs",
     "verify:layers": "node bootstrap/verify-layers.mjs --json",
     "pack:custom": "node bootstrap/pack-custom.mjs",
+    "pack:plugin": "node scripts/pack-plugin.mjs",
     "probe:patches": "node scripts/probe-patch-state.mjs",
     "smoke": "npm pack --ignore-scripts && node scripts/smoke.mjs",
     "test:electron": "node scripts/check-electron-selfcheck.mjs && node scripts/check-electron-diagnostic-target.mjs && node scripts/check-macos-handoff.mjs",

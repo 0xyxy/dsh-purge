@@ -1,4 +1,5 @@
 // Generated from src/ by npm run build. Do not edit.
+// Derived UI: 0xyxy/dsh-purge (MIT), see LICENSE.
 (()=>{const __PURGE_MODULE_URL__ = typeof document !== 'undefined' ? document.currentScript?.src : undefined;
 window.__ModuleLoader__.load({id:"dsh-purge-community",factory:(require)=>{
 var module={exports:{}};var exports=module.exports;
@@ -13260,7 +13261,7 @@ function SettingsRoot(props = {}) {
         h(
           "p",
           { className: "dshpp-attribution" },
-          true ? "\u57FA\u4E8E 0xyxy/dsh-purge 1.1.71 \u72EC\u7ACB\u7EF4\u62A4\uFF0C\u4FDD\u7559\u539F\u4F5C\u8005\u7F72\u540D\uFF1B\u66F4\u65B0\u4EC5\u6765\u81EA\u672C fork\u3002" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4\uFF1B\u5B98\u65B9 Purge \u53EF\u5355\u72EC\u66F4\u65B0\u3002\u57FA\u4E8E 0xyxy/dsh-purge 1.1.71\uFF08MIT\uFF09\u3002"
+          true ? "\u72EC\u7ACB\u7EF4\u62A4\uFF1B\u66F4\u65B0\u4EC5\u6765\u81EA\u672C\u4ED3\u5E93\u3002" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4\u3002"
         )
       ),
       page === "drill" ? h(
@@ -13539,7 +13540,7 @@ function PurgePage() {
     h(
       "footer",
       { className: "dshpp-page-foot" },
-      true ? "\u57FA\u4E8E 0xyxy/dsh-purge 1.1.71 \u72EC\u7ACB\u7EF4\u62A4 \xB7 MIT \xB7 \u4FDD\u7559\u539F\u4F5C\u8005\u7F72\u540D" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4 \xB7 \u57FA\u4E8E 0xyxy/dsh-purge 1.1.71\uFF08MIT\uFF09"
+      true ? "\u57FA\u4E8E \u72EC\u7ACB\u7EF4\u62A4\u7248\u672C" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4"
     )
   );
 }

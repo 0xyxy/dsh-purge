@@ -33,9 +33,6 @@
     "screenshots.json",
     "README.md",
     "README.zh-CN.md",
-    "LICENSE",
-    "NOTICE.md",
-    "CONTRIBUTORS.md",
     "AGENTS.md"
   ],
   "scripts": {

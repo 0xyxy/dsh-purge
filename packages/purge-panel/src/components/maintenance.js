@@ -712,7 +712,7 @@ export function CommunityMaintenance() {
       h(
         "a",
         {
-          href: "https://github.com/kingcharleslzy-ai/dsh-purge/releases",
+          href: "https://github.com/0xyxy/dsh-purge/releases",
           target: "_blank",
           rel: "noreferrer",
         },

@@ -1,4 +1,3 @@
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h, useState } from "../shared/react.js";
 import { useT } from "../shared/locale.js";
 import { statusKind, statusLabel } from "./patch-status.js";

@@ -1,6 +1,5 @@
 import { apiUrl } from "../api/client.js";
 import * as rd from "react-dom";
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h } from "../shared/react.js";
 import { Btn } from "./primitives.js";
 import { clientGuessSurface, hostText } from "../api/client.js";

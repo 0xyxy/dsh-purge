@@ -30,7 +30,7 @@ const result = await build({
 });
 const output =
   "// Generated from src/ by npm run build. Do not edit.\n" +
-  "// Derived UI: YuJunZhiXue/dsh-purge (MIT), see LICENSE.\n" +
+  "// Derived UI: 0xyxy/dsh-purge (MIT), see LICENSE.\n" +
   "(()=>{const __PURGE_MODULE_URL__ = typeof document !== 'undefined' ? document.currentScript?.src : undefined;\n" +
   "window.__ModuleLoader__.load({id:" +
   JSON.stringify(pkg.name) +

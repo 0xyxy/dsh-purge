@@ -74,9 +74,9 @@ profile 不存在/有多个且未明确选择时停止。Web/Headless 只用当�
 
 ## 1.6.26 权限恢复与只读诊断
 
-[#20](https://github.com/kingcharleslzy-ai/dsh-purge/issues/20) 的原子替换丢失可执行位已修复。CLI 备份失败会停止写入；旧备份保留。回滚启动器时需同时恢复内容与普通 rwx 权限，不能只复制文本。备份为同目录 `.dsh-purge.bak`；若备份来自已损坏权限的版本，不能据此假定它具有正确执行位。不要对整个应用递归 chmod，也不要为了修复启动器去应用宿主补丁或重启应用。
+[#20](https://github.com/0xyxy/dsh-purge/issues/20) 的原子替换丢失可执行位已修复。CLI 备份失败会停止写入；旧备份保留。回滚启动器时需同时恢复内容与普通 rwx 权限，不能只复制文本。备份为同目录 `.dsh-purge.bak`；若备份来自已损坏权限的版本，不能据此假定它具有正确执行位。不要对整个应用递归 chmod，也不要为了修复启动器去应用宿主补丁或重启应用。
 
-[#19](https://github.com/kingcharleslzy-ai/dsh-purge/issues/19) 保持排查中。使用 `purge-community host-status` 或状态接口 `host_layout`，分别核对磁盘布局和当前服务入口。磁盘存在 app.asar 不足以证明当前服务从归档加载；归档已移走也不足以证明旧进程已经重载。Web/CLI 路径与 Desktop 路径不同，应保留并对照具体实例证据；不要直接移走归档、覆盖旧备份或反复重启来“消红”。
+[#19](https://github.com/0xyxy/dsh-purge/issues/19) 保持排查中。使用 `purge-community host-status` 或状态接口 `host_layout`，分别核对磁盘布局和当前服务入口。磁盘存在 app.asar 不足以证明当前服务从归档加载；归档已移走也不足以证明旧进程已经重载。Web/CLI 路径与 Desktop 路径不同，应保留并对照具体实例证据；不要直接移走归档、覆盖旧备份或反复重启来“消红”。
 
 本次只调整通用文件操作、CLI错误上报和只读诊断；未更改宿主补丁、换包助手、提示词或权限策略。完整验证见 [1.6.26](releases/1.6.26.md)。
 

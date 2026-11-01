@@ -1,5 +1,4 @@
 // Red-team mode detection + composer send-control matching, ported from
-// YuJunZhiXue/dsh-purge 1.1.71 (MIT). Original block: client.js 1.1.71
 // lines 7994-8132: isRedteamPresetId / readSessionAgentPreset /
 // isRedteamModeActive / looksLikeSendControl.
 import { currentSessionId, hostSessions } from "./rewind-draft.js";

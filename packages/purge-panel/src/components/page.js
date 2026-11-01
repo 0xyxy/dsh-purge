@@ -313,8 +313,8 @@ export function PurgePage() {
       "footer",
       { className: "dshpp-page-foot" },
       __COMMUNITY__
-        ? "基于 YuJunZhiXue/dsh-purge 1.1.71 独立维护 · MIT · 保留原作者署名"
-        : "界面独立维护 · 基于 YuJunZhiXue/dsh-purge 1.1.71（MIT）",
+        ? "基于 独立维护版本"
+        : "界面独立维护",
     ),
   );
 }

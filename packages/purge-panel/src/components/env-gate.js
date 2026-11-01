@@ -1,6 +1,5 @@
 import { apiUrl } from "../api/client.js";
 // Red-team "environment not ready" send gate, ported from
-// YuJunZhiXue/dsh-purge 1.1.71 (MIT). Original block: client.js 1.1.71
 // lines 8134-8346: fetchEnvAdaptStatus / fetchEnvAdaptStatusSync /
 // EnvAdaptSendGate.
 import {

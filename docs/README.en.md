@@ -6,11 +6,10 @@
 
 A self-hosted add-on for DeepSeek Harness (known in the community as a 破甲 / "jailbreak" plugin) · 84 host patches · 25 status layers
 
-[![Release](https://img.shields.io/github/v/release/kingcharleslzy-ai/dsh-purge?label=release)](https://github.com/kingcharleslzy-ai/dsh-purge/releases)
+[![Release](https://img.shields.io/github/v/release/0xyxy/dsh-purge?label=release)](https://github.com/0xyxy/dsh-purge/releases)
 
 Current version 1.6.67 · targets **DSH Desktop 0.2.1-rc.5** (rc.1 / rc.2 / rc.3 also pass)
 
-**Original project and author:** independently maintained from [dsh-purge by 小杨 / YuJunZhiXue](https://github.com/YuJunZhiXue/dsh-purge). The original repository is available again. Original attribution, copyright and the MIT license are retained; this community distribution is not an official upstream release.
 
 </div>
 
@@ -46,12 +45,12 @@ Local learning, personal projects, automation experiments and maintenance work. 
 
 **DSH provides the official plugin UI and `dsh plugin` CLI. Our `install.sh` / `install.ps1` are community-maintained wrappers, not DeepSeek scripts.**
 
-- First installation: use DSH's Plugins install dialog. Following the current official guide, open Plugins → More beside Experimental plugins → Custom plugin market, then Discover → Add index source. Our community index: `https://kingcharleslzy-ai.github.io/dsh-purge/index.json`. Check the owner `kingcharleslzy-ai/dsh-purge` and package `dsh-purge-community` before confirming.
+- First installation: use DSH's Plugins install dialog. Following the current official guide, open Plugins → More beside Experimental plugins → Custom plugin market, then Discover → Add index source. Our community index: `https://0xyxy.github.io/dsh-purge/index.json`. Check the owner `0xyxy/dsh-purge` and package `dsh-purge-community` before confirming.
 - Existing `dsh-purge` or separate panel installation: use the community installer to back up and migrate in place. Do not uninstall first or activate both packages.
 - CLI/Web users who already have `dsh` on PATH and use the `web` profile can use the official command below. Desktop users should not download another npx host to install into their existing desktop profile.
 
 ```sh
-dsh plugin --profile web add "https://github.com/kingcharleslzy-ai/dsh-purge/releases/download/v1.6.67/dsh-purge-community-1.6.67.tgz"
+dsh plugin --profile web add "https://github.com/0xyxy/dsh-purge/releases/download/v1.6.67/dsh-purge-community-1.6.67.tgz"
 ```
 
 Use the actual instance's profile and `DSH_HOME`. This project distributes via GitHub; do not substitute bare npm package names. The official command does not run our extra Release SHA256 check, migration snapshot or rollback wrapper.
@@ -109,8 +108,6 @@ Thank you to the original author, code contributors, and everyone who provided r
 <!-- CONTRIBUTORS:START -->
 <table>
   <tr>
-    <td align="center" width="120"><a href="https://github.com/YuJunZhiXue"><img src="https://avatars.githubusercontent.com/u/188421097?s=112" width="56" height="56" alt="YuJunZhiXue" /><br /><sub>YuJunZhiXue</sub></a></td>
-    <td align="center" width="120"><a href="https://github.com/kingcharleslzy-ai"><img src="https://avatars.githubusercontent.com/u/260348840?s=112" width="56" height="56" alt="kingcharleslzy-ai" /><br /><sub>kingcharleslzy-ai</sub></a></td>
     <td align="center" width="120"><a href="https://github.com/luowang-ui"><img src="https://avatars.githubusercontent.com/u/62333101?s=112" width="56" height="56" alt="luowang-ui" /><br /><sub>luowang-ui</sub></a></td>
     <td align="center" width="120"><a href="https://github.com/heigit"><img src="https://avatars.githubusercontent.com/u/8845668?s=112" width="56" height="56" alt="heigit" /><br /><sub>heigit</sub></a></td>
     <td align="center" width="120"><a href="https://github.com/OGHong"><img src="https://avatars.githubusercontent.com/u/130678941?s=112" width="56" height="56" alt="OGHong" /><br /><sub>OGHong</sub></a></td>

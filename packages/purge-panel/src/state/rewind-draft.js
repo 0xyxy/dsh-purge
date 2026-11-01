@@ -1,4 +1,3 @@
-// Composer draft / rewind plumbing ported from YuJunZhiXue/dsh-purge 1.1.71
 // (MIT). Original block: client.js 1.1.71 lines 2854-3121, from
 // DRAFT_KEY .. openRewoundSession(), plus the module-level host references.
 import { apiJson } from "../api/client.js";

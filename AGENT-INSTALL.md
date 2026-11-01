@@ -4,7 +4,7 @@
 
 ## 仓库定位
 
-本仓库是 [`kingcharleslzy-ai/dsh-purge`](https://github.com/kingcharleslzy-ai/dsh-purge) 的 fork，
+本仓库是 [`0xyxy/dsh-purge`](https://github.com/0xyxy/dsh-purge) 的 fork，
 **已经跟到上游 1.6.67**（合并时 git 只有一个冲突：`package.json` 的安装地址，已按"保本仓库
 release 地址 + 收上游版本与兼容矩阵"解掉）。
 

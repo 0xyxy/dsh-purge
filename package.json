@@ -58,7 +58,6 @@
     "test:electron": "node scripts/check-electron-selfcheck.mjs && node scripts/check-electron-diagnostic-target.mjs && node scripts/check-macos-handoff.mjs",
     "build:market": "node scripts/build-market.mjs"
   },
-  "license": "MIT",
   "keywords": [
     "deepseek",
     "deepseek-harness",
@@ -100,7 +99,7 @@
         "@deepseek-ai/dsh-client-ui-sidebar-right"
       ]
     },
-        "install": {
+    "install": {
       "preferred": "tarball",
       "tarball": "https://github.com/0xyxy/dsh-purge/releases/latest/download/dsh-purge-community.tgz",
       "git": "https://github.com/0xyxy/dsh-purge.git"
@@ -119,7 +118,8 @@
         "0.2.1-rc.5": "compatible",
         "0.2.2-alpha.2": "unknown"
       }
-    }  },
+    }
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -131,35 +131,11 @@
   },
   "dshTarget": "0.2.1-rc.1 (runtime injection + host patches verified)",
   "contributors": [
-    "小杨 / YuJunZhiXue (original dsh-purge author)",
-    {
-      "name": "luowang-ui",
-      "url": "https://github.com/luowang-ui"
-    },
-    {
-      "name": "heigit",
-      "url": "https://github.com/heigit"
-    },
-    {
-      "name": "OGHong",
-      "url": "https://github.com/OGHong"
-    },
-    {
-      "name": "loLollipop",
-      "url": "https://github.com/loLollipop"
-    },
-    {
-      "name": "youki258",
-      "url": "https://github.com/youki258"
-    },
-    {
-      "name": "SimonQvQ",
-      "url": "https://github.com/SimonQvQ"
-    }
+    "0xyxy"
   ],
   "author": {
-    "name": "kingcharleslzy-ai",
-    "url": "https://github.com/kingcharleslzy-ai"
+    "name": "0xyxy",
+    "url": "https://github.com/0xyxy"
   },
   "dependencies": {
     "yaml": "2.9.1"

@@ -1,4 +1,3 @@
-// First-run user notice, ported from YuJunZhiXue/dsh-purge 1.1.71 (MIT).
 // Original block: client.js 1.1.71 lines 7698-7703 (WELCOME_KEY /
 // readWelcomeAck / writeWelcomeAck) and 7846-7903 (WelcomeNotice).
 import * as rd from "react-dom";

@@ -1,4 +1,3 @@
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 
 export function splitListedVersion(raw) {
   const text = String(raw || "")

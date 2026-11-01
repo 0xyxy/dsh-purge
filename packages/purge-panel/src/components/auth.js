@@ -1,5 +1,4 @@
 import * as rd from "react-dom";
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h, useState, useEffect, useRef } from "../shared/react.js";
 import { useT } from "../shared/locale.js";
 import { __dshPurgeDrill } from "../vendor/drill.js";

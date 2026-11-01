@@ -1,5 +1,4 @@
 // Generated from src/ by npm run build. Do not edit.
-// Derived UI: YuJunZhiXue/dsh-purge (MIT), see LICENSE.
 (()=>{const __PURGE_MODULE_URL__ = typeof document !== 'undefined' ? document.currentScript?.src : undefined;
 window.__ModuleLoader__.load({id:"dsh-purge-community",factory:(require)=>{
 var module={exports:{}};var exports=module.exports;
@@ -9138,7 +9137,7 @@ var zh = {
   "welcome.lead": "\u9996\u6B21\u5B89\u88C5\u672C\u63D2\u4EF6\u65F6\u8BF7\u9605\u8BFB\u4EE5\u4E0B\u8BF4\u660E\u3002\u786E\u8BA4\u540E\u672C\u7A97\u4E0D\u518D\u5F39\u51FA\u3002",
   "welcome.warn": "\u672C\u63D2\u4EF6\u514D\u8D39\u5F00\u6E90\u3002\u4EFB\u4F55\u80CC\u7740\u4F5C\u8005\u79C1\u81EA\u552E\u5356\u3001\u4ED8\u8D39\u5012\u5356\u6216\u501F\u672C\u9879\u76EE\u76C8\u5229\u7684\u884C\u4E3A\uFF0C\u4F5C\u8005\u5C06\u4F9D\u6CD5\u8FFD\u7A76\u6CD5\u5F8B\u8D23\u4EFB\u3002",
   "welcome.body": "dsh-purge \u662F DeepSeek Harness \u7684\u672C\u673A\u7F51\u7EDC\u5B89\u5168\u7EA2\u961F\u8BC4\u6D4B\u4E0E\u6E05\u6D17\u63D2\u4EF6\uFF1A\u5728\u53D7\u63A7\u672C\u673A\u73AF\u5883\u4E2D\u8C03\u6574\u63D0\u793A\u8BCD\u4E0E\u8865\u4E01\u3001\u505A\u6388\u6743\u8303\u56F4\u5185\u7684\u6F14\u7EC3\u53F0\u64CD\u4F5C\u3002\u9879\u76EE\u514D\u8D39\u3001\u975E\u8425\u5229\uFF0C\u6E90\u7801\u4ED3\u5E93\uFF1A",
-  "welcome.repo": "https://github.com/YuJunZhiXue/dsh-purge",
+  "welcome.repo": "https://github.com/0xyxy/dsh-purge",
   "welcome.ban1": "\u7981\u6B62\u5C06\u672C\u9879\u76EE\u7528\u4E8E\u672A\u6388\u6743\u7684\u7F51\u7EDC\u653B\u51FB\u3001\u5165\u4FB5\u3001\u7A83\u53D6\u6570\u636E\u3001\u7834\u574F\u7CFB\u7EDF\u6216\u4EFB\u4F55\u8FDD\u6CD5\u72AF\u7F6A\u3002",
   "welcome.ban2": "\u7981\u6B62\u5546\u4E1A\u552E\u5356\u3001\u4ED8\u8D39\u5012\u5356\u3001\u9ED1\u7070\u4EA7\u725F\u5229\uFF0C\u4EE5\u53CA\u9690\u7792\u4F5C\u8005\u7684\u8425\u5229\u6027\u518D\u5206\u53D1\u3002",
   "welcome.ban3": "\u4F7F\u7528\u8005\u987B\u81EA\u884C\u9075\u5B88\u6240\u5728\u5730\u6CD5\u5F8B\u6CD5\u89C4\u4E0E\u5E73\u53F0\u89C4\u8303\uFF1B\u8FDD\u6CD5\u540E\u679C\u7531\u884C\u4E3A\u4EBA\u81EA\u884C\u627F\u62C5\uFF0C\u4E0E\u4F5C\u8005\u65E0\u5173\u3002",
@@ -9515,7 +9514,7 @@ var en = {
   "welcome.lead": "Please read this on first install. After you confirm, it will not appear again.",
   "welcome.warn": "This plugin is free and open source. Anyone who sells, resells, or profits from it behind the author's back may face legal action.",
   "welcome.body": "dsh-purge is a local DeepSeek Harness plugin for security evaluation and cleaning: adjust prompts and patches on a machine you control, and use the drill console only within authorized scope. It is free and non-profit. Repository:",
-  "welcome.repo": "https://github.com/YuJunZhiXue/dsh-purge",
+  "welcome.repo": "https://github.com/0xyxy/dsh-purge",
   "welcome.ban1": "Do not use this project for unauthorized attacks, intrusion, data theft, sabotage, or any illegal activity.",
   "welcome.ban2": "Do not commercially sell, resell, or profit from gray-market use, or redistribute for profit without the author.",
   "welcome.ban3": "You must follow local law and platform rules; illegal use is solely your responsibility.",
@@ -10843,7 +10842,7 @@ function CommunityMaintenance() {
       h(
         "a",
         {
-          href: "https://github.com/kingcharleslzy-ai/dsh-purge/releases",
+          href: "https://github.com/0xyxy/dsh-purge/releases",
           target: "_blank",
           rel: "noreferrer"
         },
@@ -13261,7 +13260,7 @@ function SettingsRoot(props = {}) {
         h(
           "p",
           { className: "dshpp-attribution" },
-          true ? "\u57FA\u4E8E YuJunZhiXue/dsh-purge 1.1.71 \u72EC\u7ACB\u7EF4\u62A4\uFF0C\u4FDD\u7559\u539F\u4F5C\u8005\u7F72\u540D\uFF1B\u66F4\u65B0\u4EC5\u6765\u81EA\u672C fork\u3002" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4\uFF1B\u5B98\u65B9 Purge \u53EF\u5355\u72EC\u66F4\u65B0\u3002\u57FA\u4E8E YuJunZhiXue/dsh-purge 1.1.71\uFF08MIT\uFF09\u3002"
+          true ? "\u57FA\u4E8E 0xyxy/dsh-purge 1.1.71 \u72EC\u7ACB\u7EF4\u62A4\uFF0C\u4FDD\u7559\u539F\u4F5C\u8005\u7F72\u540D\uFF1B\u66F4\u65B0\u4EC5\u6765\u81EA\u672C fork\u3002" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4\uFF1B\u5B98\u65B9 Purge \u53EF\u5355\u72EC\u66F4\u65B0\u3002\u57FA\u4E8E 0xyxy/dsh-purge 1.1.71\uFF08MIT\uFF09\u3002"
         )
       ),
       page === "drill" ? h(
@@ -13540,7 +13539,7 @@ function PurgePage() {
     h(
       "footer",
       { className: "dshpp-page-foot" },
-      true ? "\u57FA\u4E8E YuJunZhiXue/dsh-purge 1.1.71 \u72EC\u7ACB\u7EF4\u62A4 \xB7 MIT \xB7 \u4FDD\u7559\u539F\u4F5C\u8005\u7F72\u540D" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4 \xB7 \u57FA\u4E8E YuJunZhiXue/dsh-purge 1.1.71\uFF08MIT\uFF09"
+      true ? "\u57FA\u4E8E 0xyxy/dsh-purge 1.1.71 \u72EC\u7ACB\u7EF4\u62A4 \xB7 MIT \xB7 \u4FDD\u7559\u539F\u4F5C\u8005\u7F72\u540D" : "\u754C\u9762\u72EC\u7ACB\u7EF4\u62A4 \xB7 \u57FA\u4E8E 0xyxy/dsh-purge 1.1.71\uFF08MIT\uFF09"
     )
   );
 }
@@ -14776,7 +14775,7 @@ function PanelOverlays() {
     // Restored from 1.1.71 apply(): shell.overlay carried the welcome notice
     // and the red-team environment gate next to the dock.
     h(WelcomeNotice, {
-      repo: true ? "https://github.com/kingcharleslzy-ai/dsh-purge" : void 0
+      repo: true ? "https://github.com/0xyxy/dsh-purge" : void 0
     }),
     h(EnvAdaptSendGate),
     st.authOpen ? h(AuthGate, { pending: st.pending }) : null

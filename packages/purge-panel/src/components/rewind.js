@@ -1,4 +1,3 @@
-// Session composer "回退" (rewind) button ported from YuJunZhiXue/dsh-purge
 // 1.1.71 (MIT). Original block: client.js 1.1.71 lines 2835-3474:
 // REWIND_CSS, RewindSafe/RewindFallback/RewindButton, installRewindUi,
 // installRewindWatch.

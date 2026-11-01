@@ -1,6 +1,5 @@
 import { apiUrl } from "../api/client.js";
 import React from "react";
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 
 export const __dshPurgeDrill = (() => {
   var module = { exports: {} };

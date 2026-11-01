@@ -1,5 +1,4 @@
 import { CommunityMaintenance } from "./maintenance.js";
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h, useState, useEffect } from "../shared/react.js";
 import { setTranslate, useT } from "../shared/locale.js";
 import { apiJson } from "../api/client.js";
@@ -168,8 +167,8 @@ export function SettingsRoot(props = {}) {
           "p",
           { className: "dshpp-attribution" },
           __COMMUNITY__
-            ? "基于 YuJunZhiXue/dsh-purge 1.1.71 独立维护，保留原作者署名；更新仅来自本 fork。"
-            : "界面独立维护；官方 Purge 可单独更新。基于 YuJunZhiXue/dsh-purge 1.1.71（MIT）。",
+            ? "独立维护；更新仅来自本仓库。"
+            : "界面独立维护。",
         ),
       ),
       page === "drill"

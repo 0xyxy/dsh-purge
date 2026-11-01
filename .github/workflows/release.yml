@@ -10,7 +10,7 @@ concurrency:
 jobs:
   release:
     needs: installer
-    if: github.repository == 'kingcharleslzy-ai/dsh-purge'
+    if: github.repository == '0xyxy/dsh-purge'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

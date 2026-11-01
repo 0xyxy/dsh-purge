@@ -17,7 +17,7 @@
 
 此版本仅修改通用更新通道和凭据保护，不变更宿主补丁、提示词或自动更新偏好；本次测试不改维护者正式 DSH 设置、代理或防护，也不自动重启。ACL 不等于加密，不能防止管理员或同一用户进程读取。
 
-[#122](https://github.com/kingcharleslzy-ai/dsh-purge/issues/122) 暂留待确认：维护者实机为 Windows 11，尚需报告者在 Windows 10 19041 / 原 Clash TUN fakeIP 环境确认修复效果。[验证与维护说明](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/update-channel-122.md)
+[#122](https://github.com/0xyxy/dsh-purge/issues/122) 暂留待确认：维护者实机为 Windows 11，尚需报告者在 Windows 10 19041 / 原 Clash TUN fakeIP 环境确认修复效果。[验证与维护说明](https://github.com/0xyxy/dsh-purge/blob/master/docs/update-channel-122.md)
 
 # 1.6.66
 
@@ -38,7 +38,7 @@
 
 #118 保持打开：已复现并修复的是错误分类问题，不能据此认定报告者的具体卡住原因。仍需其换包状态、错误详情和助手日志。#119 的修复限于宿主诊断，不等于 #102 所提 NEXT 桌面发行版已经完整兼容。
 
-[PR #121](https://github.com/kingcharleslzy-ai/dsh-purge/pull/121) · [验证与边界](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/host-diagnostics-118-119.md)
+[PR #121](https://github.com/0xyxy/dsh-purge/pull/121) · [验证与边界](https://github.com/0xyxy/dsh-purge/blob/master/docs/host-diagnostics-118-119.md)
 
 # 1.6.65
 
@@ -191,7 +191,7 @@ purge-community patches disable 19       # 关掉
 
 **未纳入**：#95 现场资源损坏原因、#89 换包助手问题、PR #102 第三方桌面换包和 PR #113 Cookie/header 修改。它们继续保持开放，不将未验证宿主标记为已兼容。
 
-测试和恢复边界见 [维护记录](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-1.6.61.md)。
+测试和恢复边界见 [维护记录](https://github.com/0xyxy/dsh-purge/blob/master/docs/maintenance-1.6.61.md)。
 
 ---
 
@@ -206,7 +206,7 @@ purge-community patches disable 19       # 关掉
 
 **#89 仍待确认，不在本版修复范围内。** Windows 4090 的普通启动器退出验收通过；受控 Kill-on-close Job Object 实验可复现助手退出、waiting_for_quit 残留且归档未移动。尚需报告者确认现场进程托管机制，不能把受控复现当成其现场根因已经确定。
 
-测试范围与恢复说明见 [维护记录](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-issues-86-89.md)。
+测试范围与恢复说明见 [维护记录](https://github.com/0xyxy/dsh-purge/blob/master/docs/maintenance-issues-86-89.md)。
 
 ---
 
@@ -503,7 +503,7 @@ $DSH_HOME/dsh-purge/boost-order.json   →  {"order": 9500}
 
 不修改现有设置、权限配置或代理，不自动应用补丁、不退出或重启 DSH。排除只控制提示词，不撤销全局宿主补丁。旧宿主更新需要用户安排应用补丁并手动退出重开。
 
-配置与测试边界见 [维护说明](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-issue-53.md)。感谢 REALOIYO 的详细报告与方案。
+配置与测试边界见 [维护说明](https://github.com/0xyxy/dsh-purge/blob/master/docs/maintenance-issue-53.md)。感谢 REALOIYO 的详细报告与方案。
 
 # 1.6.39
 
@@ -514,7 +514,7 @@ $DSH_HOME/dsh-purge/boost-order.json   →  {"order": 9500}
 
 不修改现有提示词、设置、预设、功能或代理，不自动应用补丁、不退出或重启 DSH。#52 报告者的具体网络故障仍需用新版脱敏日志确认，不能把本机通过等同于对方环境已经恢复。
 
-排查与测试边界见 [维护说明](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-issue-52.md)。
+排查与测试边界见 [维护说明](https://github.com/0xyxy/dsh-purge/blob/master/docs/maintenance-issue-52.md)。
 
 # 1.6.38
 
@@ -532,11 +532,11 @@ $DSH_HOME/dsh-purge/boost-order.json   →  {"order": 9500}
 
 ## 修掉一个会真出问题的死链
 
-原上游仓库 `YuJunZhiXue/dsh-purge` 已被删除并换成无关项目。`lib/update-net.js` 里的
+原上游仓库 `0xyxy/dsh-purge` 已被删除并换成无关项目。`lib/update-net.js` 里的
 `UPSTREAM_REPO` 仍指向它，**beta / 源码 ZIP 通道**会因此 404：
 
 ```js
-export const SOURCE_REPO = "kingcharleslzy-ai/dsh-purge";
+export const SOURCE_REPO = "0xyxy/dsh-purge";
 export const UPSTREAM_REPO = SOURCE_REPO;   // 旧名字保留，避免外部脚本引用失效
 ```
 
@@ -611,7 +611,7 @@ npm test   239 通过 / 0 失败
 
 升级插件本身不会自动应用补丁或重启。用户在桌面 Purge 中点「应用」后，确认换包状态为“等待完整退出”，使用 **⌘Q** 完整退出；待独立诊断确认 `handoff.phase=complete` 后再手动打开 DSH。仅关闭窗口不一定退出进程。助手最多等待 30 分钟。
 
-故障时先保留状态及备份，按 [#40 维护说明](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-issue-40.md) 排查；不要删除归档、锁或修改权限来消除提示。插件包回滚与宿主归档恢复是两件事，不能用旧用户配置覆盖当前设置。
+故障时先保留状态及备份，按 [#40 维护说明](https://github.com/0xyxy/dsh-purge/blob/master/docs/maintenance-issue-40.md) 排查；不要删除归档、锁或修改权限来消除提示。插件包回滚与宿主归档恢复是两件事，不能用旧用户配置覆盖当前设置。
 
 ---
 
@@ -650,7 +650,6 @@ npm test   含 test/refusal-retry：命中/不命中、恰好重试一次、正�
 
 验证包含三平台完整测试和发行包 smoke，Windows PowerShell 5.1/7 与真实 Electron 交接，macOS 真实 Electron 诊断。新增 Ubuntu 非 root 环境中的官方 DSH 0.2.1-rc.2 npm 宿主实测，覆盖用户副本安装、CLI 启动、插件导入、备份、回滚和失败恢复。Linux 图形界面与模型任务未全面验收，不宣称所有发行版完整兼容。
 
-感谢 [SimonQvQ](https://github.com/SimonQvQ) 的 Linux 支持与 CachyOS 验证。详细边界见 [维护记录](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-pr-42.md)。
 
 ---
 
@@ -665,7 +664,7 @@ npm test   含 test/refusal-retry：命中/不命中、恰好重试一次、正�
 - 增加 macOS/Windows 真实 Electron 归档与 HTTP 接口回归，继续运行三平台安装及打包检查。
 
 这次确认的是可复现的路径诊断缺陷。报告者的具体 DSH 版本和剩余红项仍需其诊断信息确认。
-详见 [维护说明](https://github.com/kingcharleslzy-ai/dsh-purge/blob/master/docs/maintenance-issue-40.md)。
+详见 [维护说明](https://github.com/0xyxy/dsh-purge/blob/master/docs/maintenance-issue-40.md)。
 
 ---
 
@@ -686,7 +685,6 @@ npm test   含 test/refusal-retry：命中/不命中、恰好重试一次、正�
 
 本机 macOS：212 项测试，207 通过、5 项平台跳过；Windows 11 实机隔离目录：212 项测试，209 通过、3 项平台跳过，包括真实 TLS/代理与 Electron 交接。两端真实 Electron 44.7.0 自检通过。补齐了测试脚本在 Windows 上需先退出测试子进程再删除临时 ASAR 的处理，未修改宿主换包逻辑。Windows 发行包 smoke 也已通过，修正测试脚本直接执行 npm.cmd 的启动方式，并将打包检查加入三个平台的 PR 与发行 CI。
 
-感谢 [fanqiecd](https://github.com/fanqiecd) 提供完整复现与版本对照。详见 [诊断维护说明](docs/maintenance-issue-38.md)。
 
 ---
 
@@ -706,7 +704,6 @@ npm test   含 test/refusal-retry：命中/不命中、恰好重试一次、正�
 - Windows 11 实机隔离环境，使用真实 DSH 0.2.1-rc.2 CLI 和 npm 全局模式嵌套布局：旧版安装、候选升级、快照回滚、重新升级、注入验证失败后的恢复均通过；每阶段新进程加载插件入口。原有设置与代理摘要未变，未重启用户 DSH。
 - 实机候选包标识为 1.6.30-pr33.1；正式包仅同步版本与文档，继续通过发行流水线重新测试和打包。此记录不等于新一轮 GUI 或模型质量验收。
 
-感谢 [youki258](https://github.com/youki258) 提交修复与测试，已加入贡献者名单。详见 [维护说明](docs/maintenance-pr-33.md)。
 
 ---
 
@@ -727,7 +724,6 @@ npm test   含 test/refusal-retry：命中/不命中、恰好重试一次、正�
 
 说明：1.6.28 的目录回滚修复不包含这次面板入口，#34 在本版补齐。PAC/SOCKS 不执行；独立 bootstrap 下载器不属于插件内统一网络层。详细边界见 [维护说明](../maintenance-issues-34-35.md)。
 
-感谢 [fanqiecd](https://github.com/fanqiecd) 的完整复现与网络对照证据。
 
 ---
 
@@ -748,7 +744,6 @@ npm test   含 test/refusal-retry：命中/不命中、恰好重试一次、正�
 - 真实上游提交 ec69166706bed95efb6c35e225b01588f3cd9b72 的 118 个文件通过 Git tree 校验；它验证与 GitHub 所指提交一致，不是发行商签名或对上游代码安全性的背书。API 不可用时不降级为跳过校验。
 - #30 继续调查：普通合成任务确认特定 system section 过滤会移除项目约定／记忆，但尚未完成在线模型质量 A/B，不宣称本版已经解决所有能力下降反馈。
 
-感谢 [loLollipop](https://github.com/loLollipop) 的修复、审计与测试贡献。详情见 [维护说明](docs/maintenance-issues-27-30.md)。
 
 安装更新后，由用户方便时手动退出并重新打开 DSH。安装不代表当前进程已加载新版；本次没有自动修改用户的安装、设置或运行进程。
 
@@ -1063,7 +1058,7 @@ Windows 交接与设置兼容修复；实机结果与边界见 [1.6.9 验收记�
 # 1.6.7
 
 - 修复 macOS 临时目录路径别名导致独立 bootstrap 入口静默跳过的问题；使用真实文件路径判断入口，并加入 symlink 启动回归。
-- 修复 [issue #7](https://github.com/kingcharleslzy-ai/dsh-purge/issues/7) 的独立安装恢复路径：公开镜像缺少 `@dsh-ops/bash-win32-x64` 指定版本元数据时，验证 npm 官方元数据后只对该 scope 重试一次。保留全部 pnpm 校验，不改变全局源、不切换私有源、不重试真实完整性/信任/发布时间错误。
+- 修复 [issue #7](https://github.com/0xyxy/dsh-purge/issues/7) 的独立安装恢复路径：公开镜像缺少 `@dsh-ops/bash-win32-x64` 指定版本元数据时，验证 npm 官方元数据后只对该 scope 重试一次。保留全部 pnpm 校验，不改变全局源、不切换私有源、不重试真实完整性/信任/发布时间错误。
 - 新增 Windows PowerShell 5.1 / 7 安装入口，自动定位唯一 Desktop（可显式指定），使用应用运行时，不要求全局 Node/pnpm；参数、空格/中文路径、失败退出与进程环境恢复纳入测试。
 - macOS / Windows 共用下载、大小边界、SHA256、包身份核对与备份迁移；修复校验清单含稳定别名但未下载该别名时的误报。
 - 同步 README、中文副本、英文指南、AGENTS 与维护说明；明确市场首次安装由 DSH 执行，需选择 npm 官方源或使用独立安装器，不声称插件能接管加载前的宿主流程。
@@ -1088,12 +1083,11 @@ Windows 交接与设置兼容修复；实机结果与边界见 [1.6.9 验收记�
 
 ## 修复 issue #5：Electron ASAR 双向误判
 
-感谢 [@OGHong](https://github.com/OGHong) 在 [issue #5](https://github.com/kingcharleslzy-ai/dsh-purge/issues/5) 中提供复现与最小修复。宿主归档检查改用已有 `diskFs()`，覆盖直接调用及完整 selfCheck 入口；归档存在、缺失及权限错误分别如实显示，不通过忽略异常强行标绿，也不改全局 `process.noAsar`。
 
 ## 市场与安装包
 
 - 新增官方 format-1 市场索引，固定完整 Git 提交，仅展示已发布正式版本；发布成功后通过 GitHub Pages 自动部署。
-- 添加源地址：**https://kingcharleslzy-ai.github.io/dsh-purge/index.json**。启用 DSH 实验性的「自定义插件市场」后，在发现页添加。
+- 添加源地址：**https://0xyxy.github.io/dsh-purge/index.json**。启用 DSH 实验性的「自定义插件市场」后，在发现页添加。
 - 兼容范围按已验证的 0.2.1 rc.1/rc.2 保守标注；第三方社区目录收录需另外审核，不冒充官方背书。
 - 附件包含版本安装包、固定名称 `dsh-purge-community.tgz` 和 SHA256SUMS.txt；固定名称方便社区目录跟随最新正式版本。
 
@@ -1103,4 +1097,4 @@ Windows 交接与设置兼容修复；实机结果与边界见 [1.6.9 验收记�
 
 本版不改宿主补丁表、提示词或现有权限选择。现有用户需手动安装/更新本版并重启一次，新的更新设置才会出现；本次发布不会自动安装到维护者或其他用户的机器。
 
-[1.6.4 发布记录](https://github.com/kingcharleslzy-ai/dsh-purge/releases/tag/v1.6.4) · [更新设置说明](https://github.com/kingcharleslzy-ai/dsh-purge/blob/v1.6.5/docs/AUTO-UPDATE.md)
+[1.6.4 发布记录](https://github.com/0xyxy/dsh-purge/releases/tag/v1.6.4) · [更新设置说明](https://github.com/0xyxy/dsh-purge/blob/v1.6.5/docs/AUTO-UPDATE.md)

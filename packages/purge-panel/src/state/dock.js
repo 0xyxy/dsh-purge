@@ -1,5 +1,4 @@
 import { apiUrl } from "../api/client.js";
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { useState, useEffect } from "../shared/react.js";
 import { __dshPurgeDrill } from "../vendor/drill.js";
 

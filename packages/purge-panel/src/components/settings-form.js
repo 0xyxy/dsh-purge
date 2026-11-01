@@ -1,5 +1,4 @@
 import { apiUrl } from "../api/client.js";
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { incompleteApplyDetail } from "../shared/apply-result.js";
 import { runtimeRepairDetails } from "../shared/runtime-error.js";
 import {

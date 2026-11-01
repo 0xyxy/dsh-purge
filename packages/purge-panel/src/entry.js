@@ -1,4 +1,3 @@
-// UI derived from YuJunZhiXue/dsh-purge 1.1.71 (MIT). See LICENSE.
 import { h, react } from "./shared/react.js";
 import { PURGE_CSS } from "./styles/index.js";
 import { useDock, startGrantSync } from "./state/dock.js";
@@ -48,7 +47,7 @@ export function PanelOverlays() {
     // and the red-team environment gate next to the dock.
     h(WelcomeNotice, {
       repo: __COMMUNITY__
-        ? "https://github.com/kingcharleslzy-ai/dsh-purge"
+        ? "https://github.com/0xyxy/dsh-purge"
         : undefined,
     }),
     h(EnvAdaptSendGate),

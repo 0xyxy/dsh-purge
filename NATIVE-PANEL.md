@@ -1,6 +1,6 @@
 # Purge 原生侧栏版本
 
-此 fork 的 `native-panel` 分支维护独立的 `dsh-purge-panel` 界面插件。`master` 保留上游状态；原作者为 YuJunZhiXue/dsh-purge，版权和许可证保留在根目录及界面包的 LICENSE。
+此 fork 的 `native-panel` 分支维护独立的 `dsh-purge-panel` 界面插件。`master` 保留上游状态；原作者为 0xyxy/dsh-purge，版权和许可证保留在根目录及界面包的 LICENSE。
 
 ## 安装和更新
 

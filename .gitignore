@@ -38,3 +38,7 @@ market-dist/
 # bootstrap 打包产物（pack-custom.mjs 生成）
 dist/
 bootstrap/install-layers.log
+
+# 人格改写时的本地备份，不进仓库
+*.bak-pre-*
+*.bak-*

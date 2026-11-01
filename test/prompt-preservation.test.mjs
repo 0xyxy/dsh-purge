@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import * as core from '../lib/core.js';
 import {removeTreeNoFollowSync} from '../lib/remove-tree.js';
-const custom = '<|im_start|>system:\r\n<project_instructions>\r\nLittle Code Sauce\r\nUSER PREFERENCE: answer in concise prose.\r\n';
+const custom = '<|im_start|>system:\r\n<project_instructions>\r\n大肥鱼\r\nUSER PREFERENCE: answer in concise prose.\r\n';
 function fixture(t) {
   const home=fs.mkdtempSync(path.join(os.tmpdir(),'purge-prompt-preserve-'));
   const old=process.env.DSH_HOME;process.env.DSH_HOME=home;

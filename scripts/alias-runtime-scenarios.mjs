@@ -35,7 +35,7 @@ for(const alias of ['dsh-purge-community','dsh-purge']){
   assert.equal(typeof installedYaml(profile).parseDocument,'function');
   fs.writeFileSync(config,`# KEEP USER CONFIG\n- id: dsh-purge\n  name: ${alias}\n  config:\n    enabled: false\n    postPrompt: USER CONFIG SENTINEL\n`);
   const prompt=path.join(home,'prompt-inject.md');
-  let sentinel='<|im_start|>system:\r\n<project_instructions>\r\nLittle Code Sauce\r\nUSER PREFERENCE: use short sentences.\r\n';
+  let sentinel='<|im_start|>system:\r\n<project_instructions>\r\n大肥鱼\r\nUSER PREFERENCE: use short sentences.\r\n';
   fs.writeFileSync(prompt,sentinel);
   fs.mkdirSync(path.join(home,'dsh-purge'),{recursive:true});
   // Mimic an existing customized save from the previous release, without running it.

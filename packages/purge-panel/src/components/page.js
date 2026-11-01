@@ -312,9 +312,7 @@ export function PurgePage() {
     h(
       "footer",
       { className: "dshpp-page-foot" },
-      __COMMUNITY__
-        ? "基于 独立维护版本"
-        : "界面独立维护",
+      __COMMUNITY__ ? "基于 独立维护版本" : "界面独立维护",
     ),
   );
 }

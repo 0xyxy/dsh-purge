@@ -166,9 +166,7 @@ export function SettingsRoot(props = {}) {
         h(
           "p",
           { className: "dshpp-attribution" },
-          __COMMUNITY__
-            ? "独立维护；更新仅来自本仓库。"
-            : "界面独立维护。",
+          __COMMUNITY__ ? "独立维护；更新仅来自本仓库。" : "界面独立维护。",
         ),
       ),
       page === "drill"

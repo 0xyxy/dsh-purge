@@ -1,4 +1,3 @@
-
 export const NS = "settings.dsh-purge-panel";
 
 export let translate = (key) => key;

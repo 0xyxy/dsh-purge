@@ -46,9 +46,7 @@ export function PanelOverlays() {
     // Restored from 1.1.71 apply(): shell.overlay carried the welcome notice
     // and the red-team environment gate next to the dock.
     h(WelcomeNotice, {
-      repo: __COMMUNITY__
-        ? "https://github.com/0xyxy/dsh-purge"
-        : undefined,
+      repo: __COMMUNITY__ ? "https://github.com/0xyxy/dsh-purge" : undefined,
     }),
     h(EnvAdaptSendGate),
     st.authOpen ? h(AuthGate, { pending: st.pending }) : null,
